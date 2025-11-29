@@ -28,30 +28,30 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-center">Sign Up</h2>
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="w-full max-w-md p-8 bg-card rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold mb-6 text-center text-primary">Sign Up</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+            <label htmlFor="email" className="block text-sm font-medium text-primary">Email</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-4 py-2 border border-primary/30 rounded-md shadow-sm focus:ring-primary focus:border-primary text-primary"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+            <label htmlFor="password" className="block text-sm font-medium text-primary">Password</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-4 py-2 border border-primary/30 rounded-md shadow-sm focus:ring-primary focus:border-primary text-primary"
             />
           </div>
           {(formError || error) && (
@@ -62,15 +62,15 @@ const Signup: React.FC = () => {
           )}
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full py-2 px-4 bg-primary hover:bg-primary/90 text-background font-semibold rounded-md shadow focus:outline-none focus:ring-2 focus:ring-primary"
             disabled={loading}
           >
             {loading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
         <div className="mt-6 text-center">
-          <span className="text-gray-600">Already a user? </span>
-          <a href="/login" className="text-blue-600 hover:underline">Login</a>
+          <span className="text-primary/70">Already a user? </span>
+          <a href="/login" className="text-primary hover:underline">Login</a>
         </div>
       </div>
     </div>

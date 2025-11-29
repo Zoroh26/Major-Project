@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Satoshi-Medium';
+  src: url('/Satoshi-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@theme {
+  --color-primary: #022526;
+  --color-secondary: #022526;
+  --color-background: #F0FFF1;
+  --color-card: #D9FCDE;
+}
+
+* {
+  font-family: 'Satoshi-Medium', sans-serif;
+}
+
+body {
+  background-color: #F0FFF1;
+  color: #022526;
+}

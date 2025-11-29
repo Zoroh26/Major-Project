@@ -69,32 +69,34 @@ useEffect(() => {
 
 
   return (
-    <div className="w-full bg-gradient-to-r from-slate-800 via-slate-800 to-slate-900 rounded-lg shadow-lg p-6">
-      <h3 className="text-white font-semibold text-lg mb-6">Real-time Metrics</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="w-full flex flex-col">
+      <h3 className="text-primary font-semibold text-base mb-2">Real-time Metrics</h3>
+      <div className="flex gap-2">
         {metrics.map((metric, index) => (
           <div
             key={index}
-            className={`bg-gradient-to-br ${metric.color} rounded-lg p-4 text-white shadow-lg hover:shadow-xl transition-shadow duration-300`}
+            className="bg-card rounded-lg p-3 border-2 border-primary flex-1"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-white bg-opacity-20 rounded-lg backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-1.5 bg-card rounded-lg border-2 border-primary">
                 {metric.icon}
               </div>
               {metric.change && (
                 <span
-                  className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                  className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
                     metric.change.startsWith('-')
-                      ? 'bg-red-500 bg-opacity-30'
-                      : 'bg-green-500 bg-opacity-30'
+                      ? 'bg-red-500/20 text-red-700'
+                      : 'bg-green-500/20 text-green-700'
                   }`}
                 >
                   {metric.change}
                 </span>
               )}
             </div>
-            <p className="text-sm text-white text-opacity-80 mb-1">{metric.label}</p>
-            <p className="text-3xl font-bold">{metric.value}</p>
+            <div className="flex items-end justify-between">
+              <p className="text-l text-primary/70 ">{metric.label}</p>
+              <p className="text-3xl font-bold text-primary">{metric.value}</p>
+            </div>
           </div>
         ))}
       </div>

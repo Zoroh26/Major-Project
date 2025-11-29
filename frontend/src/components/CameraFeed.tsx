@@ -1,8 +1,8 @@
 
 const CameraFeed = () => {
   return (
-    <div className="h-full w-full relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg shadow-lg overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(68,68,68,.2)_25%,rgba(68,68,68,.2)_50%,transparent_50%,transparent_75%,rgba(68,68,68,.2)_75%,rgba(68,68,68,.2))] bg-[length:60px_60px] animate-pulse" />
+    <div className="h-full w-full relative bg-card rounded-lg overflow-hidden border-2 border-primary">
+      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(2,37,38,.05)_25%,rgba(2,37,38,.05)_50%,transparent_50%,transparent_75%,rgba(2,37,38,.05)_75%,rgba(2,37,38,.05))] bg-[length:60px_60px] animate-pulse" />
 
       <video
         className="w-full h-full object-cover"
@@ -15,7 +15,7 @@ const CameraFeed = () => {
       </video>
 
       {/* Recording indicator */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-500 bg-opacity-80 px-3 py-2 rounded-full backdrop-blur-sm">
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-500/80 px-3 py-2 rounded-full backdrop-blur-sm">
         <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
         <span className="text-white text-xs font-semibold">LIVE</span>
       </div>

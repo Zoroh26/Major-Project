@@ -109,7 +109,7 @@ const canvasRef = useRef<HTMLCanvasElement>(null);
     <div className="h-full w-full flex flex-col">
       <canvas
         ref={canvasRef}
-        className="w-full flex-1 rounded-lg bg-gradient-to-br from-blue-950 to-blue-900 shadow-lg"
+        className="w-full flex-1 rounded-lg bg-card border-2 border-primary"
       />
     </div>
   )
