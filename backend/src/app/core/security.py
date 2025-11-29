@@ -27,28 +27,24 @@ class TokenType(str, Enum):
 
 
 async def verify_password(plain_password: str, hashed_password: str) -> bool:
-    correct_password: bool = bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+    correct_password: bool = bcrypt.checkpw(
+        plain_password.encode(), hashed_password.encode())
     return correct_password
 
 
 def get_password_hash(password: str) -> str:
-    hashed_password: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    hashed_password: str = bcrypt.hashpw(
+        password.encode(), bcrypt.gensalt()).decode()
     return hashed_password
 
 
 async def authenticate_user(username_or_email: str, password: str, db: AsyncSession) -> dict[str, Any] | Literal[False]:
-    if "@" in username_or_email:
-        db_user = await crud_users.get(db=db, email=username_or_email, is_deleted=False)
-    else:
-        db_user = await crud_users.get(db=db, username=username_or_email, is_deleted=False)
-
+    db_user = await crud_users.get(db=db, email=username_or_email, is_deleted=False)
     if not db_user:
         return False
-
     db_user = cast(dict[str, Any], db_user)
     if not await verify_password(password, db_user["hashed_password"]):
         return False
-
     return db_user
 
 
@@ -57,9 +53,11 @@ async def create_access_token(data: dict[str, Any], expires_delta: timedelta | N
     if expires_delta:
         expire = datetime.now(UTC).replace(tzinfo=None) + expires_delta
     else:
-        expire = datetime.now(UTC).replace(tzinfo=None) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(UTC).replace(tzinfo=None) + \
+            timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "token_type": TokenType.ACCESS})
-    encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY.get_secret_value(), algorithm=ALGORITHM)
+    encoded_jwt: str = jwt.encode(
+        to_encode, SECRET_KEY.get_secret_value(), algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -68,9 +66,11 @@ async def create_refresh_token(data: dict[str, Any], expires_delta: timedelta | 
     if expires_delta:
         expire = datetime.now(UTC).replace(tzinfo=None) + expires_delta
     else:
-        expire = datetime.now(UTC).replace(tzinfo=None) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now(UTC).replace(tzinfo=None) + \
+            timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "token_type": TokenType.REFRESH})
-    encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY.get_secret_value(), algorithm=ALGORITHM)
+    encoded_jwt: str = jwt.encode(
+        to_encode, SECRET_KEY.get_secret_value(), algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -96,7 +96,8 @@ async def verify_token(token: str, expected_token_type: TokenType, db: AsyncSess
         return None
 
     try:
-        payload = jwt.decode(token, SECRET_KEY.get_secret_value(), algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token, SECRET_KEY.get_secret_value(), algorithms=[ALGORITHM])
         username_or_email: str | None = payload.get("sub")
         token_type: str | None = payload.get("token_type")
 
@@ -122,7 +123,8 @@ async def blacklist_tokens(access_token: str, refresh_token: str, db: AsyncSessi
         Database session for performing database operations.
     """
     for token in [access_token, refresh_token]:
-        payload = jwt.decode(token, SECRET_KEY.get_secret_value(), algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token, SECRET_KEY.get_secret_value(), algorithms=[ALGORITHM])
         exp_timestamp = payload.get("exp")
         if exp_timestamp is not None:
             expires_at = datetime.fromtimestamp(exp_timestamp)
@@ -130,7 +132,8 @@ async def blacklist_tokens(access_token: str, refresh_token: str, db: AsyncSessi
 
 
 async def blacklist_token(token: str, db: AsyncSession) -> None:
-    payload = jwt.decode(token, SECRET_KEY.get_secret_value(), algorithms=[ALGORITHM])
+    payload = jwt.decode(
+        token, SECRET_KEY.get_secret_value(), algorithms=[ALGORITHM])
     exp_timestamp = payload.get("exp")
     if exp_timestamp is not None:
         expires_at = datetime.fromtimestamp(exp_timestamp)

@@ -22,10 +22,6 @@ async def write_user(
     if email_row:
         raise DuplicateValueException("Email is already registered")
 
-    username_row = await crud_users.exists(db=db, username=user.username)
-    if username_row:
-        raise DuplicateValueException("Username not available")
-
     user_internal_dict = user.model_dump()
     user_internal_dict["hashed_password"] = get_password_hash(
         password=user_internal_dict["password"])
@@ -34,7 +30,7 @@ async def write_user(
     user_internal = UserCreateInternal(**user_internal_dict)
     created_user = await crud_users.create(db=db, object=user_internal)
 
-    user_read = await crud_users.get(db=db, id=created_user.id, schema_to_select=UserRead)
+    user_read = await crud_users.get(db=db, uuid=created_user.uuid, schema_to_select=UserRead)
     if user_read is None:
         raise NotFoundException("Created user not found")
 
