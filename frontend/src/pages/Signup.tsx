@@ -1,17 +1,30 @@
 
 
 import React, { useState } from "react";
+import { useAuthStore } from "../store/auth";
+import { useNavigate } from "react-router-dom";
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const signup = useAuthStore((state) => state.signup);
+  const loading = useAuthStore((state) => state.loading);
+  const error = useAuthStore((state) => state.error);
+  const navigate = useNavigate();
 
-
-  const role = "user";
-  const handleSubmit = (e: React.FormEvent) => {
+  const [success, setSuccess] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Integration logic will go here
-    alert(`Signup attempted with email: ${email}, role: ${role}`);
+    setFormError(null);
+    setSuccess(false);
+    try {
+      await signup({ email, password });
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || err?.message || "Signup failed");
+    }
   };
 
   return (
@@ -41,12 +54,18 @@ const Signup: React.FC = () => {
               className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-
+          {(formError || error) && (
+            <div className="text-red-600 text-sm text-center">{formError || error}</div>
+          )}
+          {success && (
+            <div className="text-green-600 text-sm text-center">Signup successful! Please log in.</div>
+          )}
           <button
             type="submit"
             className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={loading}
           >
-            Sign Up
+            {loading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
         <div className="mt-6 text-center">

@@ -1,14 +1,26 @@
 
 import React, { useState } from "react";
+import { useAuthStore } from "../store/auth";
+import { useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const login = useAuthStore((state) => state.login);
+  const loading = useAuthStore((state) => state.loading);
+  const error = useAuthStore((state) => state.error);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Integration logic will go here
-    alert(`Login attempted with email: ${email}`);
+    setFormError(null);
+    try {
+      await login({ email, password });
+      navigate("/dashboard");
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || err?.message || "Login failed");
+    }
   };
 
   return (
@@ -38,11 +50,15 @@ const Login: React.FC = () => {
               className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+          {(formError || error) && (
+            <div className="text-red-600 text-sm text-center">{formError || error}</div>
+          )}
           <button
             type="submit"
             className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={loading}
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
         <div className="mt-6 text-center">
