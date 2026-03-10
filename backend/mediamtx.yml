@@ -1,0 +1,35 @@
+# MediaMTX Configuration
+logLevel: info
+
+# Auth: internal with a wildcard user (no password) so all actions are allowed
+authMethod: internal
+authInternalUsers:
+  - user: any
+    pass: ""
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+      - action: api
+
+# API Configuration
+api: yes
+apiAddress: :9997
+
+# HLS Output
+hls: yes
+hlsSegmentCount: 3
+hlsSegmentDuration: 1s
+hlsAddress: :8888
+
+# WebRTC Output
+webrtc: yes
+webrtcAddress: :8889
+
+# RTSP Input
+rtspAddress: :8554
+
+# Named streaming paths
+paths:
+  phone:
+    # This path will accept RTSP streams from IP Webcam

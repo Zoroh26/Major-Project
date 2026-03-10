@@ -38,6 +38,20 @@ services:
     depends_on:
       - db
 
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    restart: always
+    ports:
+      - "8554:8554"    # RTSP
+      - "8888:8888"    # HLS
+      - "8889:8889"    # WebRTC
+      - "9997:9997"    # REST API
+    volumes:
+      - ./backend/mediamtx.yml:/mediamtx.yml
+    environment:
+      - MEDIAMTX_API_ADDRESS=:9997
+      - MEDIAMTX_API_UDP=no
+
   # frontend:
   #   build:
   #     context: ./frontend

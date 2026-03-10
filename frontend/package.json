@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
+    "@types/hls.js": "^0.13.3",
     "axios": "^1.13.2",
+    "hls.js": "^1.6.15",
     "lucide-react": "^0.555.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

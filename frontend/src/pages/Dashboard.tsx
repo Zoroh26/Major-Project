@@ -1,41 +1,46 @@
-import HeatMap from '../components/HeatMap';
+import { useState, useEffect } from 'react';
 import CameraFeed from '../components/CameraFeed';
-import DataPanel from '../components/DataPanel';
-
-
+import { getCameras, type Camera } from '../services/api';
 
 const Dashboard = () => {
+  const [cameras, setCameras] = useState<Camera[]>([]);
+
+  useEffect(() => {
+    getCameras()
+      .then((res) => setCameras(res.data.data))
+      .catch(() => {});
+  }, []);
+
   return (
-    <div className="h-[98vh] bg-background p-6 overflow-hidden">
-      <div className="grid grid-cols-4 gap-2 h-full" style={{ gridTemplateRows: '10% 31% 31% 28%' }}>
-        {/* div1 - Welcome */}
-        <div className="col-span-4 flex items-center">
-          <h1 className="text-3xl font-bold text-primary">Welcome to Dashboard</h1>
-        </div>
-
-        {/* div4 - Camera Feed */}
-        <div className="col-span-2 row-span-2 col-start-1 row-start-2 bg-card rounded-lg border-2 border-primary p-4 overflow-hidden">
-          <h2 className="text-lg font-semibold text-primary mb-2">Camera Feed</h2>
-          <div className="h-[calc(100%-2.5rem)]">
-            <CameraFeed />
-          </div>
-        </div>
-
-        {/* div5 - Heatmap */}
-        <div className="col-span-2 row-span-2 col-start-3 row-start-2 bg-card rounded-lg border-2 border-primary p-4 overflow-hidden">
-          <h2 className="text-lg font-semibold text-primary mb-2">Crowd Density Heatmap</h2>
-          <div className="h-[calc(100%-2.5rem)]">
-            <HeatMap />
-          </div>
-        </div>
-
-        {/* div2 - Real-time Metrics */}
-        <div className="col-span-4 col-start-1 row-start-4 bg-card rounded-lg border-2 border-primary p-3 overflow-hidden flex">
-          <DataPanel />
-        </div>
+    <div className="h-full overflow-hidden">
+      <div className="grid grid-cols-2 grid-rows-2 gap-4 h-full">
+        {Array.from({ length: 4 }).map((_, i) => {
+          const camera = cameras[i];
+          return camera ? (
+            <div key={camera.uuid} className="bg-card rounded-lg border-2 border-primary overflow-hidden flex flex-col min-h-0">
+              <div className="flex-1 min-h-0">
+                <CameraFeed
+                  streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                  cameraName={camera.name}
+                />
+              </div>
+              <div className="px-3 py-2 shrink-0">
+                <p className="text-sm font-semibold text-primary">{camera.name}</p>
+                <p className="text-xs text-gray-400">📍 {camera.location}</p>
+              </div>
+            </div>
+          ) : (
+            <div key={`empty-${i}`} className="bg-card rounded-lg border-2 border-primary border-dashed flex items-center justify-center min-h-0">
+              <div className="text-center">
+                <div className="text-3xl mb-2 opacity-30">📷</div>
+                <p className="text-xs text-gray-500">No camera</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
