@@ -21,10 +21,15 @@ async def get_current_user(
     if token_data is None:
         raise UnauthorizedException("User not authenticated.")
 
-    if "@" in token_data.username_or_email:
-        user = await crud_users.get(db=db, email=token_data.username_or_email, is_deleted=False)
+    # In our login.py, we set "sub" to the user's UUID.
+    # verify_token puts this "sub" into token_data.username_or_email.
+    user_uuid = token_data.username_or_email
+
+    # If it happens to be an email due to old tokens or differing endpoints:
+    if "@" in user_uuid:
+        user = await crud_users.get(db=db, email=user_uuid, is_deleted=False)
     else:
-        user = await crud_users.get(db=db, username=token_data.username_or_email, is_deleted=False)
+        user = await crud_users.get(db=db, uuid=user_uuid, is_deleted=False)
 
     if user:
         if hasattr(user, 'model_dump'):

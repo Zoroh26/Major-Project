@@ -15,6 +15,7 @@ services:
       - ./backend/.env:/code/.env
       - ./backend/src/migrations:/code/migrations
       - ./backend/src/alembic.ini:/code/alembic.ini
+      - ./backend/src/scripts:/code/scripts
 
   db:
     image: postgres:13

@@ -15,6 +15,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String)
     role: Mapped[str] = mapped_column(String(20), default="user")
+    zone: Mapped[str | None] = mapped_column(String(20), default=None, nullable=True)
     uuid: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default_factory=uuid7, unique=True)
     created_at: Mapped[datetime] = mapped_column(

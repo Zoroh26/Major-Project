@@ -1,8 +1,9 @@
 export type User = {
   id: string;
   name: string;
-  role: 'admin' | 'employee';
+  role: 'admin' | 'employee' | 'security';
   token: string;
+  zone?: string | null;
 };
 
 export type AuthResponse = {

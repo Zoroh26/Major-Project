@@ -27,42 +27,36 @@ async def create_first_user(session: AsyncSession) -> None:
         user = result.scalar_one_or_none()
 
         if user is None:
-            metadata = MetaData()
-            user_table = Table(
-                "user",
-                metadata,
-                Column("id", Integer, primary_key=True, autoincrement=True, nullable=False),
-                Column("name", String(30), nullable=False),
-                Column("username", String(20), nullable=False, unique=True, index=True),
-                Column("email", String(50), nullable=False, unique=True, index=True),
-                Column("hashed_password", String, nullable=False),
-                Column("profile_image_url", String, default="https://profileimageurl.com"),
-                Column("uuid", UUID(as_uuid=True), default=uuid7, unique=True),
-                Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False),
-                Column("updated_at", DateTime),
-                Column("deleted_at", DateTime),
-                Column("is_deleted", Boolean, default=False, index=True),
-                Column("is_superuser", Boolean, default=False),
-                Column("tier_id", Integer, ForeignKey("tier.id"), index=True),
+            user_create = User(
+                email=email,
+                hashed_password=hashed_password,
+                role="admin"
             )
-
-            data = {
-                "name": name,
-                "email": email,
-                "username": username,
-                "hashed_password": hashed_password,
-                "is_superuser": True,
-            }
-
-            stmt = insert(user_table).values(data)
-            async with async_engine.connect() as conn:
-                await conn.execute(stmt)
-                await conn.commit()
-
-            logger.info(f"Admin user {username} created successfully.")
-
+            session.add(user_create)
+            await session.commit()
+            logger.info(f"Admin user {email} created successfully.")
         else:
-            logger.info(f"Admin user {username} already exists.")
+            logger.info(f"Admin user {email} already exists.")
+
+        # Seed Security Accounts
+        zones = ["top-left", "top-right", "bottom-left", "bottom-right"]
+        for zone in zones:
+            guard_email = f"security_{zone.replace('-', '_')}@example.com"
+            query = select(User).filter_by(email=guard_email)
+            result = await session.execute(query)
+            guard = result.scalar_one_or_none()
+
+            if guard is None:
+                guard_pass = get_password_hash("Guard123!")
+                new_guard = User(
+                    email=guard_email,
+                    hashed_password=guard_pass,
+                    role="security",
+                    zone=zone
+                )
+                session.add(new_guard)
+                await session.commit()
+                logger.info(f"Security guard {guard_email} created successfully.")
 
     except Exception as e:
         logger.error(f"Error creating admin user: {e}")

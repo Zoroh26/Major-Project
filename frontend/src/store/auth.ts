@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { login as loginApi, signup as signupApi } from '../services/api';
+import { login as loginApi, signup as signupApi, getCurrentUser } from '../services/api';
 import type { User } from '../types/auth';
 
 type AuthState = {
@@ -25,14 +25,26 @@ export const useAuthStore = create<AuthState>((set) => ({
 			const response = await loginApi({ email, password });
 			const { access_token } = response.data;
 			if (!access_token) throw new Error('No access token in login response');
-			// You may want to decode the token to get user info, or just store the token
+			
+			// Fetch the full user details
+			const userRes = await getCurrentUser(access_token);
+			const userData = userRes.data;
+			
+			const userObj: User = { 
+				id: userData.uuid || '', 
+				name: userData.email, 
+				role: userData.role || 'employee',
+				token: access_token,
+				zone: userData.zone || null
+			};
+
 			set({
-				user: { id: '', name: email, role: 'employee', token: access_token },
+				user: userObj,
 				isLoggedIn: true,
 				loading: false,
 			});
 			if (typeof window !== 'undefined') {
-				sessionStorage.setItem('currentUser', JSON.stringify({ user: { id: '', name: email, role: 'employee', token: access_token }, token: access_token }));
+				sessionStorage.setItem('currentUser', JSON.stringify({ user: userObj, token: access_token }));
 			}
 		} catch (error: any) {
 			set({ error: error.response?.data?.message || error.message, loading: false });
@@ -72,13 +84,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 				}
 			}
 			if (!sessionUser || !token) throw new Error('No valid session found');
+			
+			const reqUserObj: User = {
+				id: sessionUser.id,
+				name: sessionUser.name,
+				role: sessionUser.role,
+				token,
+				zone: sessionUser.zone
+			};
+
 			set({
-				user: {
-					id: sessionUser.id,
-					name: sessionUser.name,
-					role: sessionUser.role,
-					token,
-				},
+				user: reqUserObj,
 				isLoggedIn: true,
 				loading: false,
 			});
