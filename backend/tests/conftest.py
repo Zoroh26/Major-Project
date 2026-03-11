@@ -1,4 +1,6 @@
+import uuid
 from collections.abc import Callable, Generator
+from datetime import datetime
 from typing import Any
 from unittest.mock import AsyncMock, Mock
 
@@ -87,6 +89,23 @@ def sample_user_read():
         is_superuser=False,
         created_at=fake.date_time(),
         updated_at=fake.date_time(),
+    )
+
+
+@pytest.fixture
+def sample_camera_read():
+    """Generate a sample CameraRead object."""
+    from src.app.schemas.camera import CameraRead
+
+    return CameraRead(
+        uuid=uuid.uuid4(),
+        name="Office Camera",
+        location="Main Lobby",
+        rtsp_url="rtsp://192.168.1.10:8080/video",
+        stream_path="office_camera",
+        is_active=True,
+        created_at=datetime.utcnow(),
+        updated_at=None,
     )
 
 

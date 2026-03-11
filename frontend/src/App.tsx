@@ -1,27 +1,51 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
+import SecurityDashboard from "./pages/SecurityDashboard";
+import Cameras from "./pages/Cameras";
+import AppLayout from "./components/AppLayout";
+import { useAuthStore } from "./store/auth";
 
 const App = () => {
+  useEffect(() => {
+    useAuthStore.getState().checkSession();
+  }, []);
+
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const loading = useAuthStore((s) => s.loading);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin text-primary text-3xl mb-2">⏳</div>
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="*" element={<Login />} />
+        {/* Public routes */}
+        <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/signup" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Signup />} />
+
+        {/* Protected routes — wrapped in AppLayout (sidebar + topbar) */}
+        <Route element={isLoggedIn ? <AppLayout /> : <Navigate to="/login" replace />}>
+          <Route path="/security" element={<SecurityDashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/cameras" element={<Cameras />} />
+        </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />} />
       </Routes>
     </Router>
   );
 };
 
 export default App;
-
-
-

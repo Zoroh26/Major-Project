@@ -11,12 +11,13 @@ type AuthState = {
 	signup: (data: { email: string; password: string }) => Promise<void>;
 	logout: () => void;
 	checkSession: () => void;
+	setLoggedOut: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
 	user: null,
 	isLoggedIn: false,
-	loading: false,
+	loading: true,  // true until checkSession() runs on app start
 	error: null,
 
 	login: async ({ email, password }) => {
@@ -42,12 +43,20 @@ export const useAuthStore = create<AuthState>((set) => ({
 				user: userObj,
 				isLoggedIn: true,
 				loading: false,
+				error: null,
 			});
+			
 			if (typeof window !== 'undefined') {
-				sessionStorage.setItem('currentUser', JSON.stringify({ user: userObj, token: access_token }));
+				localStorage.setItem('authToken', access_token);
+				localStorage.setItem('currentUser', JSON.stringify(userObj));
 			}
 		} catch (error: any) {
-			set({ error: error.response?.data?.message || error.message, loading: false });
+			const errorMessage = 
+				error?.response?.data?.detail ||
+				error?.response?.data?.message ||
+				error?.message ||
+				'Login failed. Please try again.';
+			set({ error: errorMessage, loading: false });
 			throw error;
 		}
 	},
@@ -56,18 +65,32 @@ export const useAuthStore = create<AuthState>((set) => ({
 		set({ loading: true, error: null });
 		try {
 			await signupApi({ email, password });
-			set({ loading: false });
+			set({ loading: false, error: null });
 		} catch (error: any) {
-			set({ error: error.response?.data?.message || error.message, loading: false });
+			const errorMessage = 
+				error?.response?.data?.detail ||
+				error?.response?.data?.message ||
+				error?.message ||
+				'Signup failed. Please try again.';
+			set({ error: errorMessage, loading: false });
 			throw error;
 		}
 	},
 
 	logout: () => {
 		if (typeof window !== 'undefined') {
-			sessionStorage.removeItem('currentUser');
+			localStorage.removeItem('authToken');
+			localStorage.removeItem('currentUser');
 		}
 		set({ user: null, isLoggedIn: false, loading: false });
+	},
+
+	setLoggedOut: () => {
+		if (typeof window !== 'undefined') {
+			localStorage.removeItem('authToken');
+			localStorage.removeItem('currentUser');
+		}
+		set({ user: null, isLoggedIn: false, loading: false, error: 'Session expired. Please login again.' });
 	},
 
 	checkSession: () => {
@@ -75,12 +98,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 		try {
 			let token = '';
 			let sessionUser = null;
+			
 			if (typeof window !== 'undefined') {
-				const sessionRaw = sessionStorage.getItem('currentUser');
-				if (sessionRaw) {
-					const sessionData = JSON.parse(sessionRaw);
-					token = sessionData.token;
-					sessionUser = sessionData.user;
+				token = localStorage.getItem('authToken') || '';
+				const userRaw = localStorage.getItem('currentUser');
+				if (userRaw) {
+					sessionUser = JSON.parse(userRaw);
 				}
 			}
 			if (!sessionUser || !token) throw new Error('No valid session found');
@@ -98,11 +121,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 				isLoggedIn: true,
 				loading: false,
 			});
-		} catch {
-			set({ user: null, isLoggedIn: false, loading: false });
+		} catch (error) {
+			// Clear invalid session data
 			if (typeof window !== 'undefined') {
-				sessionStorage.removeItem('currentUser');
+				localStorage.removeItem('authToken');
+				localStorage.removeItem('currentUser');
 			}
+			set({ user: null, isLoggedIn: false, loading: false });
 		}
 	},
 }));
