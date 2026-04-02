@@ -1,31 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Plus, Trash2, Loader } from 'lucide-react';
-import { getCameras, deleteCamera, type Camera } from '../services/api';
+import { deleteCamera } from '../services/api';
 import { toast } from 'react-toastify';
 import CameraFeed from '../components/CameraFeed';
 import AddCameraModal from '../components/AddCameraModal';
+import { useCameraStore } from '../store/cameras';
+import { useState } from 'react';
 
 const Cameras = () => {
-  const [cameras, setCameras] = useState<Camera[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { cameras, isLoading, fetchCameras, addCamera, removeCamera } = useCameraStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingUuid, setDeletingUuid] = useState<string | null>(null);
 
-  const loadCameras = async () => {
-    setIsLoading(true);
-    try {
-      const response = await getCameras();
-      setCameras(response.data.data);
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to load cameras';
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadCameras();
+    fetchCameras();
   }, []);
 
   const handleDelete = async (uuid: string) => {
@@ -36,7 +24,7 @@ const Cameras = () => {
     setDeletingUuid(uuid);
     try {
       await deleteCamera(uuid);
-      setCameras(cameras.filter(c => c.uuid !== uuid));
+      removeCamera(uuid);
       toast.success('Camera deleted successfully');
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Failed to delete camera';
@@ -44,11 +32,6 @@ const Cameras = () => {
     } finally {
       setDeletingUuid(null);
     }
-  };
-
-  const handleAddSuccess = (newCamera: Camera) => {
-    // Optimistically update the UI to instantly show the newly added camera
-    setCameras(prev => [newCamera, ...prev]);
   };
 
   return (
@@ -100,7 +83,8 @@ const Cameras = () => {
                 {/* Camera Feed */}
                 <div className="h-48 mb-4 rounded overflow-hidden">
                   <CameraFeed
-                    streamUrl={camera.hls_url || `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                    webrtcUrl={camera.webrtc_url ?? `http://localhost:8889/${camera.stream_path}`}
+                    streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
                     cameraName={camera.name}
                   />
                 </div>
@@ -148,7 +132,7 @@ const Cameras = () => {
       <AddCameraModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={handleAddSuccess}
+        onSuccess={addCamera}
       />
     </div>
   );
