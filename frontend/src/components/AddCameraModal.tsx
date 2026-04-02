@@ -4,6 +4,9 @@ import { X, Loader } from 'lucide-react';
 import { addCamera } from '../services/api';
 import type { Camera } from '../services/api';
 import { toast } from 'react-toastify';
+import { Card } from './ui/Card';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 interface AddCameraModalProps {
   isOpen: boolean;
@@ -40,69 +43,55 @@ const AddCameraModal = ({ isOpen, onClose, onSuccess }: AddCameraModalProps) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-card border-2 border-primary rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-primary">Add Camera</h2>
+    <div className="fixed inset-0 bg-primary/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <Card className="max-w-md w-full relative">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-extrabold text-primary">Bind New Camera</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-primary transition"
+            className="text-primary/40 hover:text-primary transition bg-surface-container-low p-1.5 rounded-md"
             disabled={isLoading}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Camera Name */}
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">
-              Camera Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., Office Camera"
-              className="w-full px-3 py-2 bg-background border border-primary rounded text-black placeholder-gray-500 focus:outline-none focus:border-primary/50"
+            <Input
+              label="Camera Identifier"
+              placeholder="e.g., North Plaza PTZ"
               {...register('name', {
-                required: 'Camera name is required',
+                required: 'Camera identifier is required',
                 minLength: { value: 1, message: 'Name must not be empty' },
               })}
               disabled={isLoading}
+              className={errors.name ? "border-error focus:border-error bg-error/5" : ""}
             />
-            {errors.name && (
-              <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-xs text-error mt-1">{errors.name.message}</p>}
           </div>
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">
-              Location
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., Main Lobby"
-              className="w-full px-3 py-2 bg-background border border-primary rounded text-black placeholder-gray-500 focus:outline-none focus:border-primary/50"
+            <Input
+              label="Physical Location"
+              placeholder="e.g., Sector 7-G / Main Lobby"
               {...register('location', {
                 required: 'Location is required',
                 minLength: { value: 1, message: 'Location must not be empty' },
               })}
               disabled={isLoading}
+              className={errors.location ? "border-error focus:border-error bg-error/5" : ""}
             />
-            {errors.location && (
-              <p className="text-xs text-red-500 mt-1">{errors.location.message}</p>
-            )}
+            {errors.location && <p className="text-xs text-error mt-1">{errors.location.message}</p>}
           </div>
 
           {/* RTSP URL */}
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">
-              RTSP URL
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., rtsp://192.168.1.100:8080/video"
-              className="w-full px-3 py-2 bg-background border border-primary rounded text-black placeholder-gray-500 focus:outline-none focus:border-primary/50 text-xs"
+            <Input
+              label="Hardware RTSP Feed URL"
+              placeholder="rtsp://192.168.1.100:8080/video"
               {...register('rtsp_url', {
                 required: 'RTSP URL is required',
                 pattern: {
@@ -111,36 +100,34 @@ const AddCameraModal = ({ isOpen, onClose, onSuccess }: AddCameraModalProps) => 
                 },
               })}
               disabled={isLoading}
+              className={`font-mono text-xs ${errors.rtsp_url ? "border-error focus:border-error bg-error/5" : ""}`}
             />
-            {errors.rtsp_url && (
-              <p className="text-xs text-red-500 mt-1">{errors.rtsp_url.message}</p>
-            )}
-            <p className="text-xs text-gray-400 mt-1">
-              Get from IP Webcam app on your phone
-            </p>
+            {errors.rtsp_url && <p className="text-xs text-error mt-1">{errors.rtsp_url.message}</p>}
+            <p className="text-[10px] text-primary/50 mt-1 uppercase tracking-widest font-bold">Requires active local network bridge</p>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <button
+          <div className="flex gap-3 pt-2 mt-2">
+            <Button
               type="button"
+              variant="secondary"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-primary text-primary rounded hover:bg-primary/10 transition font-medium disabled:opacity-50"
+              className="flex-1"
               disabled={isLoading}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="flex-1 px-4 py-2 bg-primary text-background rounded hover:bg-primary/80 transition font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+              variant="primary"
+              className="flex-1 flex items-center justify-center gap-2"
               disabled={isLoading}
             >
-              {isLoading && <Loader size={16} className="animate-spin" />}
-              {isLoading ? 'Adding...' : 'Add Camera'}
-            </button>
+              {isLoading ? <><Loader size={16} className="animate-spin" /> Binding...</> : 'Bind Hardware'}
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 };

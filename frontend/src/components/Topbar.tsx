@@ -12,7 +12,7 @@ const Topbar = () => {
   const title = pageTitles[location.pathname] ?? 'App';
 
   return (
-    <header className="h-16 shrink-0 bg-card border-b-2 border-primary/20 flex items-center justify-between px-6">
+    <header className="h-16 shrink-0 bg-surface-container-low border-b border-outline-variant/15 flex items-center justify-between px-6">
       <h1 className="text-xl font-bold text-primary">{title}</h1>
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">

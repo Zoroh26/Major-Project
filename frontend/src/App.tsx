@@ -7,6 +7,11 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import SecurityDashboard from "./pages/SecurityDashboard";
 import Cameras from "./pages/Cameras";
+import ZoneMapper from "./pages/ZoneMapper";
+import PersonnelManager from "./pages/PersonnelManager";
+import SecurityRegistration from "./pages/SecurityRegistration";
+import MobileGuardView from "./pages/MobileGuardView";
+import CameraStats from "./pages/CameraStats";
 import AppLayout from "./components/AppLayout";
 import { useAuthStore } from "./store/auth";
 
@@ -41,7 +46,14 @@ const App = () => {
           <Route path="/security" element={<SecurityDashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/cameras" element={<Cameras />} />
+          <Route path="/zones" element={<ZoneMapper />} />
+          <Route path="/personnel" element={<PersonnelManager />} />
+          <Route path="/personnel/new" element={<SecurityRegistration />} />
         </Route>
+
+        {/* Dedicated Mobile Guard View (No sidebar) */}
+        <Route path="/guard-view" element={isLoggedIn ? <MobileGuardView /> : <Navigate to="/login" replace />} />
+        <Route path="/guard-view/camera/:cameraId" element={isLoggedIn ? <CameraStats /> : <Navigate to="/login" replace />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />} />

@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Trash2, Loader } from 'lucide-react';
 import { deleteCamera } from '../services/api';
 import { toast } from 'react-toastify';
 import CameraFeed from '../components/CameraFeed';
 import AddCameraModal from '../components/AddCameraModal';
 import { useCameraStore } from '../store/cameras';
-import { useState } from 'react';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
 
 const Cameras = () => {
   const { cameras, isLoading, fetchCameras, addCamera, removeCamera } = useCameraStore();
@@ -39,13 +41,10 @@ const Cameras = () => {
       <div className="max-w-7xl mx-auto">
         {/* Action bar */}
         <div className="flex items-center justify-end mb-6">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-background rounded hover:bg-primary/80 transition font-medium"
-          >
+          <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
             <Plus size={20} />
             Add Camera
-          </button>
+          </Button>
         </div>
 
         {/* Loading State */}
@@ -58,27 +57,24 @@ const Cameras = () => {
           </div>
         ) : cameras.length === 0 ? (
           // Empty State
-          <div className="flex items-center justify-center h-64 bg-card rounded-lg border-2 border-primary">
+          <Card className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="text-primary text-5xl mb-4">📹</div>
               <h2 className="text-xl font-bold text-primary mb-2">No Cameras Yet</h2>
-              <p className="text-gray-400 mb-4">Add your first camera to start streaming</p>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-background rounded hover:bg-primary/80 transition font-medium mx-auto"
-              >
+              <p className="text-gray-500 mb-4">Add your first camera to start streaming</p>
+              <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 mx-auto">
                 <Plus size={18} />
                 Add Camera
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         ) : (
           // Camera Grid
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {cameras.map((camera) => (
-              <div
+              <Card
                 key={camera.uuid}
-                className="bg-card rounded-lg border-2 border-primary p-4 overflow-hidden flex flex-col"
+                className="overflow-hidden flex flex-col"
               >
                 {/* Camera Feed */}
                 <div className="h-48 mb-4 rounded overflow-hidden">
@@ -96,19 +92,22 @@ const Cameras = () => {
                   <div className="mt-2 text-xs text-gray-500 space-y-1">
                     <p>Stream: <span className="text-primary font-mono">{camera.stream_path}</span></p>
                     {camera.is_active && (
-                      <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                        <span className="text-green-500">Active</span>
+                      <div>
+                        <Badge variant="success" className="mt-1">
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1" />
+                          Active
+                        </Badge>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <button
+                <Button
+                  variant="danger"
                   onClick={() => handleDelete(camera.uuid)}
                   disabled={deletingUuid === camera.uuid}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500/20 text-red-400 border border-red-500/50 rounded hover:bg-red-500/30 transition font-medium disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 mt-auto disabled:opacity-50"
                 >
                   {deletingUuid === camera.uuid ? (
                     <>
@@ -121,8 +120,8 @@ const Cameras = () => {
                       Delete
                     </>
                   )}
-                </button>
-              </div>
+                </Button>
+              </Card>
             ))}
           </div>
         )}

@@ -1,21 +1,39 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Camera, LogOut } from 'lucide-react';
+import { LayoutDashboard, Camera, LogOut, Map, Users, Smartphone, ChevronLeft, Menu } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/cameras', label: 'Cameras', icon: Camera },
-  { to: '/security', label: 'Security', icon: LayoutDashboard },
+  { to: '/zones', label: 'Zone Mapping', icon: Map },
+  { to: '/personnel', label: 'Personnel', icon: Users },
+  { to: '/guard-view', label: 'Guard Demo', icon: Smartphone },
 ];
 
 const Sidebar = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const logout = useAuthStore((s) => s.logout);
 
   return (
-    <aside className="w-16 hover:w-52 transition-all duration-300 ease-in-out overflow-hidden shrink-0 h-full bg-primary flex flex-col group">
-      {/* Logo */}
-      <div className="h-16 flex items-center justify-center shrink-0 border-b border-white/10">
-        <span className="text-2xl">📹</span>
+    <aside
+      className={`${isCollapsed ? 'w-20' : 'w-64'
+        } transition-all duration-300 ease-in-out overflow-hidden shrink-0 h-full bg-primary-container flex flex-col`}
+    >
+      {/* Header / Toggle */}
+      <div className={`h-16 flex items-center shrink-0 border-b border-outline-variant/15 ${isCollapsed ? 'justify-center' : 'justify-between px-4'}`}>
+        {!isCollapsed && (
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white tracking-tight">CROWDVISION</span>
+          </div>
+        )}
+
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+        >
+          {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
+        </button>
       </div>
 
       {/* Nav links */}
@@ -25,7 +43,8 @@ const Sidebar = () => {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap
+              `flex items-center rounded-lg transition-all duration-200 whitespace-nowrap
+              ${isCollapsed ? 'justify-center px-0 h-10' : 'gap-3 px-3 py-2.5'}
               ${isActive
                 ? 'bg-white/20 text-white font-semibold'
                 : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -33,23 +52,28 @@ const Sidebar = () => {
             }
           >
             <Icon size={20} className="shrink-0" />
-            <span className="text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              {label}
-            </span>
+            {!isCollapsed && (
+              <span className="text-sm transition-opacity duration-200">
+                {label}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
 
       {/* Logout */}
-      <div className="p-2 pb-4 border-t border-white/10">
+      <div className="p-2 pb-4 border-t border-outline-variant/15">
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+          className={`w-full flex items-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all duration-200 whitespace-nowrap
+            ${isCollapsed ? 'justify-center px-0 h-10' : 'gap-3 px-3 py-2.5'}`}
         >
           <LogOut size={20} className="shrink-0" />
-          <span className="text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            Logout
-          </span>
+          {!isCollapsed && (
+            <span className="text-sm transition-opacity duration-200">
+              Logout
+            </span>
+          )}
         </button>
       </div>
     </aside>
