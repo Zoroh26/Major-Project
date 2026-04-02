@@ -46,8 +46,9 @@ const Cameras = () => {
     }
   };
 
-  const handleAddSuccess = () => {
-    loadCameras();
+  const handleAddSuccess = (newCamera: Camera) => {
+    // Optimistically update the UI to instantly show the newly added camera
+    setCameras(prev => [newCamera, ...prev]);
   };
 
   return (

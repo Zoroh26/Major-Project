@@ -10,8 +10,9 @@ class CameraBase(BaseModel):
         min_length=1, max_length=100, examples=["Office Camera"])]
     location: Annotated[str, Field(
         min_length=1, max_length=200, examples=["Main Lobby"])]
-    rtsp_url: Annotated[str, Field(
-        examples=["rtsp://192.168.1.100:8080/video"])]
+    rtsp_url: Annotated[str | None, Field(
+        default=None, examples=["rtsp://192.168.1.100:8554/office_camera"])]
+
 
 
 class CameraCreate(CameraBase):
@@ -58,6 +59,6 @@ class CameraUpdateInternal(CameraUpdate):
 
 
 class CameraDelete(BaseModel):
-    model_config = ConfigDict(extra="forbid")
     is_deleted: bool
     deleted_at: datetime
+    stream_path: str | None = None

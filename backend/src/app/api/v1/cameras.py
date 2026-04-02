@@ -31,24 +31,55 @@ MEDIAMTX_API_URL = "http://mediamtx:9997/v3"
 
 
 async def register_path_in_mediamtx(stream_path: str, rtsp_url: str) -> bool:
-    """Register a new stream path in MediaMTX (push-mode: phone publishes to MediaMTX)"""
+    """Register a new stream path in MediaMTX using FFmpeg as source.
+
+    FFmpeg is used instead of MediaMTX's native RTSP client because some cameras
+    return malformed RTSP headers (e.g. bracketed Content-Base) that MediaMTX rejects
+    but FFmpeg tolerates. FFmpeg pulls from the camera and re-publishes to MediaMTX's
+    own RTSP endpoint, which then serves HLS/WebRTC to viewers.
+    """
     try:
-        async with httpx.AsyncClient() as client:
-            # Create an open path — no source means MediaMTX waits for a publisher to push
-            # (pull-mode via 'source' fails because Docker can't reach LAN phone IPs)
-            payload: dict = {}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # -an drops audio — camera's audio timestamps are non-monotonic which
+            # corrupts HLS segments and causes hls.js to stall the video.
+            # -use_wallclock_as_timestamps + -fflags +genpts replace broken camera DTS.
+            # Output is normalized to 15fps with a keyframe every 2s to smooth phone-camera
+            # jitter and reduce browser decode pressure.
+            ffmpeg_cmd = (
+                f"ffmpeg -hide_banner -nostdin -rtsp_transport tcp "
+                f"-use_wallclock_as_timestamps 1 -fflags +genpts "
+                f"-i '{rtsp_url}' "
+                f"-vf fps=15,format=yuv420p "
+                f"-c:v libx264 -preset ultrafast -tune zerolatency -g 30 "
+                f"-profile:v baseline -level 3.0 -pix_fmt yuv420p "
+                f"-b:v 1200k -maxrate 1200k -bufsize 2400k "
+                f"-an "
+                f"-f rtsp rtsp://mediamtx:8554/{stream_path}"
+            )
+            payload = {
+                "runOnDemand": ffmpeg_cmd,
+                "runOnDemandRestart": True,
+                "runOnDemandStartTimeout": "60s",
+                "runOnDemandCloseAfter": "30s",
+            }
             response = await client.post(
                 f"{MEDIAMTX_API_URL}/config/paths/add/{stream_path}",
                 json=payload,
-                timeout=5.0,
+                timeout=10.0,
             )
-            if response.status_code not in [200, 201]:
-                print(f"MediaMTX registration failed: {response.status_code} {response.text}")
-                # 400 means path already exists — treat as success
-                return response.status_code == 400
-            return True
+            response_text = response.text if hasattr(response, 'text') else str(response.content)
+            
+            # 200/201 = success, 400 = path already exists (also acceptable)
+            if response.status_code in [200, 201, 400]:
+                print(f"Camera path '{stream_path}' registered with MediaMTX")
+                return True
+            
+            print(f"MediaMTX registration failed: {response.status_code} {response_text}")
+            return False
     except Exception as e:
         print(f"Error registering path in MediaMTX: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
@@ -197,13 +228,17 @@ async def delete_camera(
 
     # Get stream path before deleting
     stream_path = (
-        db_camera.stream_path if isinstance(
+        db_camera["stream_path"] if isinstance(
             db_camera, dict) else db_camera.stream_path
     )
 
     # Remove from MediaMTX
     await remove_path_from_mediamtx(stream_path)
 
-    # Soft delete from database
-    delete_data = CameraDelete(is_deleted=True, deleted_at=datetime.now(UTC))
+    # Soft delete from database and free up the stream_path name
+    delete_data = CameraDelete(
+        is_deleted=True, 
+        deleted_at=datetime.now(UTC),
+        stream_path=f"deleted_{camera_uuid}_{stream_path}"
+    )
     await crud_cameras.update(db=db, object=delete_data, uuid=camera_uuid)

@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { X, Loader } from 'lucide-react';
 import { addCamera } from '../services/api';
+import type { Camera } from '../services/api';
 import { toast } from 'react-toastify';
 
 interface AddCameraModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newCamera: Camera) => void;
 }
 
 interface FormData {
@@ -23,10 +24,10 @@ const AddCameraModal = ({ isOpen, onClose, onSuccess }: AddCameraModalProps) => 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      await addCamera(data);
+      const response = await addCamera(data);
       toast.success('Camera added successfully!');
       reset();
-      onSuccess();
+      onSuccess(response.data);
       onClose();
     } catch (error: any) {
       const message = error.response?.data?.detail || error.message || 'Failed to add camera';

@@ -89,12 +89,12 @@ export interface CamerasResponse {
 // Camera endpoints
 export const getCameras = async (page: number = 1, itemsPerPage: number = 10) => {
 	return axios.get<CamerasResponse>(
-		`${API_BASE_URL}/v1/cameras?page=${page}&items_per_page=${itemsPerPage}`
+		`${API_BASE_URL}/api/v1/cameras?page=${page}&items_per_page=${itemsPerPage}`
 	);
 };
 
 export const getCamera = async (uuid: string) => {
-	return axios.get<Camera>(`${API_BASE_URL}/v1/camera/${uuid}`);
+	return axios.get<Camera>(`${API_BASE_URL}/api/v1/camera/${uuid}`);
 };
 
 export const addCamera = async (data: {
@@ -102,16 +102,16 @@ export const addCamera = async (data: {
 	location: string;
 	rtsp_url: string;
 }) => {
-	return axios.post<Camera>(`${API_BASE_URL}/v1/camera`, data);
+	return axios.post<Camera>(`${API_BASE_URL}/api/v1/camera`, data);
 };
 
 export const updateCamera = async (
 	uuid: string,
 	data: Partial<{ name: string; location: string }>
 ) => {
-	return axios.patch<Camera>(`${API_BASE_URL}/v1/camera/${uuid}`, data);
+	return axios.patch<Camera>(`${API_BASE_URL}/api/v1/camera/${uuid}`, data);
 };
 
 export const deleteCamera = async (uuid: string) => {
-	return axios.delete(`${API_BASE_URL}/v1/camera/${uuid}`);
+	return axios.delete(`${API_BASE_URL}/api/v1/camera/${uuid}`);
 };

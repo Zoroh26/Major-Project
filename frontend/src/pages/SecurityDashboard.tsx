@@ -49,7 +49,7 @@ const SecurityDashboard = () => {
   }
 
   return (
-    <div className="h-[98vh] bg-background p-6 overflow-hidden flex flex-col gap-4">
+    <div className="h-[85vh] bg-background p-6 overflow-hidden flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div>

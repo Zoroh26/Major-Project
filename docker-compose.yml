@@ -40,13 +40,17 @@ services:
       - db
 
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:latest-ffmpeg
     restart: always
     ports:
-      - "8554:8554"    # RTSP
-      - "8888:8888"    # HLS
-      - "8889:8889"    # WebRTC
-      - "9997:9997"    # REST API
+      - "8554:8554"        # RTSP TCP
+      - "8554:8554/udp"    # RTSP UDP
+      - "8000:8000/udp"    # RTP (video data)
+      - "8001:8001/udp"    # RTCP (video control)
+      - "8888:8888"        # HLS
+      - "8889:8889"        # WebRTC
+      - "8189:8189/udp"    # ICE
+      - "9997:9997"        # REST API
     volumes:
       - ./backend/mediamtx.yml:/mediamtx.yml
     environment:
@@ -65,3 +69,10 @@ services:
 volumes:
   postgres-data:
   pgadmin-data:
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.200.0.0/16
