@@ -1,38 +1,77 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertOctagon, MapPin, Clock, ShieldCheck, ArrowRight, User, Wifi, WifiOff, Eye } from 'lucide-react';
-import { useCameraStore } from '../store/cameras';
+import { AlertOctagon, MapPin, Clock, ShieldCheck, ArrowRight, User, Wifi, WifiOff, Eye, Loader2, ShieldAlert } from 'lucide-react';
+import { useAuthStore } from '../store/auth';
+import { useZoneStore } from '../store/zones';
 import CameraFeed from '../components/CameraFeed';
-import type { Camera } from '../services/api';
+import { Button } from '../components/ui/Button';
 
 const MobileGuardView: React.FC = () => {
   const navigate = useNavigate();
-  const { cameras, fetchCameras } = useCameraStore();
-  const [selectedCameras, setSelectedCameras] = useState<Camera[]>([]);
+  const { user } = useAuthStore();
+  const { activeZone, fetchZone, isLoading: isZoneLoading } = useZoneStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadCameras = async () => {
-      try {
-        await fetchCameras();
-      } catch (error) {
-        console.error('Failed to load cameras:', error);
-      } finally {
-        setIsLoading(false);
+    const initView = async () => {
+      if (user?.zone_id) {
+        try {
+          await fetchZone(user.zone_id);
+        } catch (error) {
+          console.error('Failed to load assigned zone:', error);
+        }
       }
+      setIsLoading(false);
     };
 
-    loadCameras();
-  }, [fetchCameras]);
-
-  useEffect(() => {
-    // Filter cameras for ZONE A
-    setSelectedCameras(cameras);
-  }, [cameras]);
+    initView();
+  }, [user?.zone_id, fetchZone]);
 
   const handleCameraClick = (cameraId: string) => {
     navigate(`/guard-view/camera/${cameraId}`);
   };
+
+  // If no zone is assigned, show a professional fallback
+  if (!isLoading && !user?.zone_id) {
+    return (
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center gap-6">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary animate-pulse">
+           <ShieldAlert size={40} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-primary mb-2">Awaiting Sector Assignment</h1>
+          <p className="text-primary/60 max-w-sm mx-auto">
+            Welcome, <strong>{user?.name || 'Officer'}</strong>. Your account is active, but you haven't been deployed to a specific zone yet. 
+            Please contact Dispatch to receive your assignment.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <div className="p-4 rounded-xl border border-outline-variant/10 bg-surface-container-low flex items-center gap-3">
+             <div className="p-2 bg-primary/10 rounded-lg text-primary"><User size={20} /></div>
+             <div className="text-left">
+                <p className="text-xs font-bold text-primary/40 uppercase">Profile Status</p>
+                <p className="text-sm font-semibold text-primary">{user?.rank || 'Security Personnel'}</p>
+             </div>
+          </div>
+          <Button variant="secondary" onClick={() => window.location.reload()}>Refresh Status</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || isZoneLoading) {
+    return (
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center gap-4">
+        <Loader2 size={40} className="animate-spin text-primary/40" />
+        <p className="text-sm font-medium text-primary/60 tracking-widest uppercase">Synchronizing with HQ...</p>
+      </div>
+    );
+  }
+
+  const officerName = user?.name || 'Officer';
+  const officerRank = user?.rank || 'Security';
+  const zoneName = activeZone?.name || 'Assigned Zone';
+  const cameras = activeZone?.cameras || [];
   return (
     <div className="min-h-screen bg-surface flex flex-col lg:flex-row overflow-hidden relative">
       
@@ -43,8 +82,8 @@ const MobileGuardView: React.FC = () => {
             <User size={20} />
           </div>
           <div>
-            <h1 className="font-bold leading-tight tracking-wide">Officer Smith</h1>
-            <p className="text-xs text-on-primary-container/70 tracking-wider">Alpha-1 • Active Duty</p>
+            <h1 className="font-bold leading-tight tracking-wide">{officerName}</h1>
+            <p className="text-xs text-on-primary-container/70 tracking-wider font-semibold uppercase">{officerRank} • Active Duty</p>
           </div>
         </div>
       </header>
@@ -57,15 +96,15 @@ const MobileGuardView: React.FC = () => {
               <User size={24} />
             </div>
             <div>
-              <h1 className="font-bold text-lg tracking-wide">Officer Smith</h1>
-              <p className="text-xs text-on-primary-container/70 tracking-wider">Alpha-1 • Active Duty</p>
+              <h1 className="font-bold text-lg tracking-wide">{officerName}</h1>
+              <p className="text-xs text-on-primary-container/70 tracking-wider font-semibold uppercase">{officerRank} • Active Duty</p>
             </div>
           </div>
           <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-3 flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
             <div>
-              <div className="text-primary font-bold text-sm">Assigned: ZONE A</div>
-              <div className="text-xs text-primary/50 font-semibold">All Clear</div>
+              <div className="text-primary font-bold text-sm">Assigned: {zoneName}</div>
+              <div className="text-xs text-primary/50 font-semibold">{activeZone?.description || 'All Clear'}</div>
             </div>
           </div>
         </div>
@@ -86,7 +125,7 @@ const MobileGuardView: React.FC = () => {
         <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-3 shadow-md flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary font-bold">
             <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
-            Assigned: ZONE A
+            Assigned: {zoneName}
           </div>
           <span className="text-xs font-semibold text-primary/50 bg-surface-container p-1 px-2 rounded">
             All Clear
@@ -114,7 +153,7 @@ const MobileGuardView: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 bg-surface-container-lowest/50 rounded-lg p-3 mb-4 border border-error/10">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary">
               <MapPin size={16} className="text-error shrink-0" /> 
-              <span>Zone A — North Gate Bottleneck</span>
+              <span>{zoneName} — Tactical Hub</span>
             </div>
             <div className="flex items-center gap-2 text-sm font-semibold text-primary">
               <Clock size={16} className="text-primary/60 shrink-0" /> 
@@ -135,17 +174,14 @@ const MobileGuardView: React.FC = () => {
         {/* Assigned Cameras Grid */}
         <div className="mt-6">
           <h3 className="text-lg font-bold text-primary mb-4">Assigned Optical Hardwares</h3>
-          {isLoading ? (
-            <div className="text-center py-8">
-              <p className="text-primary/60">Loading cameras...</p>
-            </div>
-          ) : selectedCameras.length === 0 ? (
-            <div className="text-center py-8 border border-outline-variant/15 rounded-xl bg-surface-container-low/30">
-              <p className="text-primary/60">No cameras assigned</p>
+          {cameras.length === 0 ? (
+            <div className="text-center py-12 border border-outline-variant/15 rounded-xl bg-surface-container-low/30 flex flex-col items-center gap-3">
+              <ShieldCheck size={32} className="text-primary/20" />
+              <p className="text-primary/60 font-medium">No optical hardware linked to this sector yet.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {selectedCameras.map((camera) => {
+              {cameras.map((camera) => {
                 const isOnline = camera.is_active;
                 const statusColor = isOnline ? 'text-green-500' : 'text-error';
                 const statusBg = isOnline ? 'bg-green-500/10' : 'bg-error/10';

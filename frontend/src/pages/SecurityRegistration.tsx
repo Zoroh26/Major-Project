@@ -35,7 +35,7 @@ const SecurityRegistration: React.FC = () => {
     setIsLoading(true);
     try {
       // 1. Create the user
-      const defaultPassword = 'Welcome123!';
+      const defaultPassword = 'Test@123';
       const res = await createUser({
         email: formData.email,
         password: defaultPassword,
@@ -62,10 +62,10 @@ const SecurityRegistration: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col max-w-4xl mx-auto w-full gap-6 p-4 overflow-y-auto">
-      
+
       {/* Header */}
       <div className="flex flex-col mb-2">
-        <button 
+        <button
           onClick={() => navigate('/personnel')}
           className="text-primary/60 hover:text-primary active:scale-95 transition-all text-xs font-bold uppercase flex items-center gap-1 w-max mb-4"
         >
@@ -92,43 +92,43 @@ const SecurityRegistration: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input 
-              label="First Name" 
-              name="firstName" 
-              placeholder="e.g. John" 
+            <Input
+              label="First Name"
+              name="firstName"
+              placeholder="e.g. John"
               value={formData.firstName}
               onChange={handleChange}
               required
             />
-            <Input 
-              label="Last Name" 
-              name="lastName" 
-              placeholder="e.g. Smith" 
+            <Input
+              label="Last Name"
+              name="lastName"
+              placeholder="e.g. Smith"
               value={formData.lastName}
               onChange={handleChange}
               required
             />
-            <Input 
-              label="Badge / Radio ID" 
-              name="badgeId" 
-              placeholder="e.g. RT-1002-X" 
+            <Input
+              label="Badge / Radio ID"
+              name="badgeId"
+              placeholder="e.g. RT-1002-X"
               value={formData.badgeId}
               onChange={handleChange}
               required
             />
-            <Input 
-              label="Official Email Address" 
+            <Input
+              label="Official Email Address"
               type="email"
-              name="email" 
-              placeholder="john.smith@crowdvision.net" 
+              name="email"
+              placeholder="john.smith@crowdvision.net"
               value={formData.email}
               onChange={handleChange}
               required
             />
-            
+
             <div className="flex flex-col">
               <label className="text-xs font-bold text-primary uppercase tracking-widest mb-2">Assignment Rank</label>
-              <select 
+              <select
                 name="rank"
                 value={formData.rank}
                 onChange={handleChange}
@@ -140,10 +140,10 @@ const SecurityRegistration: React.FC = () => {
                 <option value="Dispatch Operator">Dispatch Operator</option>
               </select>
             </div>
-            
+
             <div className="flex flex-col">
               <label className="text-xs font-bold text-primary uppercase tracking-widest mb-2">Assigned Zone</label>
-              <select 
+              <select
                 name="zone"
                 value={formData.zone}
                 onChange={handleChange}
