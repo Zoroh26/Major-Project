@@ -98,6 +98,70 @@ export interface CamerasResponse {
 	total_pages: number;
 }
 
+export type MlSourceMode = 'direct_webcam' | 'mediamtx';
+
+export interface MlMetricsPayload {
+	person_count: number;
+	average_confidence: number;
+	max_confidence: number;
+	processing_time_ms: number;
+	inference_fps: number;
+	alert_triggered: boolean;
+}
+
+export interface MlHeatmapPayload {
+	width: number;
+	height: number;
+	values: number[];
+}
+
+export interface MlFramePayload {
+	width: number;
+	height: number;
+}
+
+export interface MlHotspotPayload {
+	x: number;
+	y: number;
+	intensity: number;
+}
+
+export interface MlResultPayload {
+	camera_uuid: string;
+	timestamp: string;
+	source_mode: MlSourceMode;
+	metrics: MlMetricsPayload;
+	frame: MlFramePayload;
+	heatmap: MlHeatmapPayload;
+	hotspot: MlHotspotPayload;
+}
+
+export interface MlSessionState {
+	running: boolean;
+	source_mode: MlSourceMode | null;
+	last_update: string | null;
+	message: string | null;
+	error: string | null;
+}
+
+export interface MlLatestResponse {
+	running: boolean;
+	latest: MlResultPayload | null;
+	error: string | null;
+}
+
+export interface MlStartRequest {
+	source_mode?: MlSourceMode;
+	device_id?: number;
+	stream_url?: string;
+	model_name?: string;
+	interval_seconds?: number;
+	confidence_threshold?: number;
+	heatmap_width?: number;
+	heatmap_height?: number;
+	camera_uuid?: string;
+}
+
 // Camera endpoints
 export const getCameras = async (page: number = 1, itemsPerPage: number = 10) => {
 	return axios.get<CamerasResponse>(
@@ -170,5 +234,55 @@ export const assignGuardToZone = async (zoneUuid: string, userUuid: string) => {
 
 export const unassignGuardFromZone = async (zoneUuid: string, userUuid: string) => {
 	return axios.delete(`${API_BASE_URL}/api/v1/zone/${zoneUuid}/unassign-guard/${userUuid}`);
+};
+
+const getMlDevBaseUrl = () => `${API_BASE_URL}/api/v1/ml/dev`;
+
+const getMlWebsocketUrl = () => {
+	if (API_BASE_URL.startsWith('https://')) {
+		return API_BASE_URL.replace('https://', 'wss://');
+	}
+	if (API_BASE_URL.startsWith('http://')) {
+		return API_BASE_URL.replace('http://', 'ws://');
+	}
+	return `ws://localhost:8000`;
+};
+
+export const startMlDevSession = async (payload: MlStartRequest = {}) => {
+	return axios.post<MlSessionState>(`${getMlDevBaseUrl()}/start`, payload);
+};
+
+export const stopMlDevSession = async () => {
+	return axios.post<MlSessionState>(`${getMlDevBaseUrl()}/stop`);
+};
+
+export const getMlDevStatus = async () => {
+	return axios.get<MlSessionState>(`${getMlDevBaseUrl()}/status`);
+};
+
+export const getMlDevLatest = async () => {
+	return axios.get<MlLatestResponse>(`${getMlDevBaseUrl()}/latest`);
+};
+
+export const createMlDevStream = (
+	onMessage: (payload: MlResultPayload) => void,
+	onError?: (event: Event) => void
+) => {
+	const ws = new WebSocket(`${getMlWebsocketUrl()}/api/v1/ml/dev/stream`);
+
+	ws.onmessage = (event) => {
+		try {
+			const parsed = JSON.parse(event.data) as MlResultPayload;
+			onMessage(parsed);
+		} catch {
+			// Ignore malformed payloads and keep the stream alive.
+		}
+	};
+
+	if (onError) {
+		ws.onerror = onError;
+	}
+
+	return ws;
 };
 

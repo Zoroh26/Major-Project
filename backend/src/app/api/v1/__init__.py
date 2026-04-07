@@ -7,6 +7,7 @@ from .users import router as users_router
 from .alerts import router as alerts_router
 from .cameras import router as cameras_router
 from .zones import router as zones_router
+from .ml_dev import router as ml_dev_router
 
 
 router = APIRouter(prefix="/v1")
@@ -17,3 +18,4 @@ router.include_router(users_router)
 router.include_router(alerts_router, prefix="/alerts")
 router.include_router(cameras_router)
 router.include_router(zones_router)
+router.include_router(ml_dev_router, prefix="/ml")

@@ -51,6 +51,8 @@ nav:
       - Installation: getting-started/installation.md
       - Configuration: getting-started/configuration.md
       - First Run: getting-started/first-run.md
+ 
+      - Local ML Integration Test: local-ml-integration-test.md
   - User Guide:
       - Overview: user-guide/index.md
       - Project Structure: user-guide/project-structure.md
