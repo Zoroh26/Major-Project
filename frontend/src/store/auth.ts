@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { login as loginApi, signup as signupApi, getCurrentUser } from '../services/api';
-import type { User } from '../types/auth';
+import type { User, RegisterData } from '../types/auth';
 
 type AuthState = {
 	user: User | null;
@@ -8,7 +8,7 @@ type AuthState = {
 	loading: boolean;
 	error: string | null;
 	login: (credentials: { email: string; password: string }) => Promise<void>;
-	signup: (data: { email: string; password: string }) => Promise<void>;
+	signup: (data: RegisterData) => Promise<void>;
 	logout: () => void;
 	checkSession: () => void;
 	setLoggedOut: () => void;
@@ -32,11 +32,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 			const userData = userRes.data;
 			
 			const userObj: User = { 
-				id: userData.uuid || '', 
-				name: userData.email, 
+				id: userData.uuid || '',
+				email: userData.email,
+				name: userData.name || userData.email, 
 				role: userData.role || 'employee',
+				rank: userData.rank || null,
 				token: access_token,
-				zone: userData.zone || null
+				zone_id: userData.zone_id || null
 			};
 
 			set({
@@ -61,10 +63,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 		}
 	},
 
-	signup: async ({ email, password }) => {
+	signup: async (data: RegisterData) => {
 		set({ loading: true, error: null });
 		try {
-			await signupApi({ email, password });
+			await signupApi(data);
 			set({ loading: false, error: null });
 		} catch (error: any) {
 			const errorMessage = 
@@ -110,10 +112,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 			
 			const reqUserObj: User = {
 				id: sessionUser.id,
+				email: sessionUser.email,
 				name: sessionUser.name,
 				role: sessionUser.role,
+				rank: sessionUser.rank,
 				token,
-				zone: sessionUser.zone
+				zone_id: sessionUser.zone_id
 			};
 
 			set({

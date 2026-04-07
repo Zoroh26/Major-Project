@@ -22,6 +22,7 @@ const App = () => {
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const loading = useAuthStore((s) => s.loading);
+  const user = useAuthStore((s) => s.user);
 
   if (loading) {
     return (
@@ -34,29 +35,43 @@ const App = () => {
     );
   }
 
+  const defaultRedirect = user?.role === "security" ? "/guard-view" : "/dashboard";
+
+  // Role-based protection wrappers
+  const AdminProtectedRoute = () => {
+    if (!isLoggedIn) return <Navigate to="/login" replace />;
+    if (user?.role === "security") return <Navigate to="/guard-view" replace />;
+    return <AppLayout />;
+  };
+
+  const SecurityProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (!isLoggedIn) return <Navigate to="/login" replace />;
+    if (user?.role !== "security") return <Navigate to="/dashboard" replace />;
+    return <>{children}</>;
+  };
+
   return (
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />} />
-        <Route path="/signup" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Signup />} />
+        <Route path="/login" element={isLoggedIn ? <Navigate to={defaultRedirect} replace /> : <Login />} />
+        <Route path="/signup" element={isLoggedIn ? <Navigate to={defaultRedirect} replace /> : <Signup />} />
 
-        {/* Protected routes — wrapped in AppLayout (sidebar + topbar) */}
-        <Route element={isLoggedIn ? <AppLayout /> : <Navigate to="/login" replace />}>
+        {/* Protected routes — wrapped in AppLayout (sidebar + topbar) (Admins only) */}
+        <Route element={<AdminProtectedRoute />}>
           <Route path="/security" element={<SecurityDashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/cameras" element={<Cameras />} />
           <Route path="/zones" element={<ZoneMapper />} />
           <Route path="/personnel" element={<PersonnelManager />} />
           <Route path="/personnel/new" element={<SecurityRegistration />} />
         </Route>
 
-        {/* Dedicated Mobile Guard View (No sidebar) */}
-        <Route path="/guard-view" element={isLoggedIn ? <MobileGuardView /> : <Navigate to="/login" replace />} />
-        <Route path="/guard-view/camera/:cameraId" element={isLoggedIn ? <CameraStats /> : <Navigate to="/login" replace />} />
+        {/* Dedicated Mobile Guard View (No sidebar) (Security only) */}
+        <Route path="/guard-view" element={<SecurityProtectedRoute><MobileGuardView /></SecurityProtectedRoute>} />
+        <Route path="/guard-view/camera/:cameraId" element={<SecurityProtectedRoute><CameraStats /></SecurityProtectedRoute>} />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />} />
+        <Route path="*" element={<Navigate to={isLoggedIn ? defaultRedirect : "/login"} replace />} />
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} theme="dark" />
     </Router>

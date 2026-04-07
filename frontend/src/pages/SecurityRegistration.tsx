@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Shield, Info, ArrowLeft } from 'lucide-react';
+import { UserPlus, Shield, Info, ArrowLeft, Loader } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { useZoneStore } from '../store/zones';
+import { createUser } from '../services/api';
 
 const SecurityRegistration: React.FC = () => {
   const navigate = useNavigate();
@@ -16,15 +19,45 @@ const SecurityRegistration: React.FC = () => {
     zone: 'Unassigned',
   });
 
+  const { zones, assignGuard, fetchZones } = useZoneStore();
+  const [isLoading, setIsLoading] = useState(false);
+
+  React.useEffect(() => {
+    fetchZones();
+  }, [fetchZones]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Normally we'd call an API here
-    console.log('Registering guard:', formData);
-    navigate('/personnel');
+    setIsLoading(true);
+    try {
+      // 1. Create the user
+      const defaultPassword = 'Welcome123!';
+      const res = await createUser({
+        email: formData.email,
+        password: defaultPassword,
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        role: 'security',
+        rank: formData.rank
+      });
+      const newUserId = (res.data as any).uuid || res.data.id;
+
+      // 2. Assign zone if applicable
+      if (formData.zone !== 'Unassigned') {
+        await assignGuard(formData.zone, newUserId);
+      }
+
+      toast.success(`Personnel registered! Temporary password is ${defaultPassword}`);
+      navigate('/personnel');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || err.message || 'Failed to register personnel');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -116,20 +149,20 @@ const SecurityRegistration: React.FC = () => {
                 onChange={handleChange}
                 className="w-full bg-surface-container-low border border-outline-variant/30 text-primary text-sm rounded-lg focus:ring-primary focus:border-primary block p-3 min-h-[46px]"
               >
-                <option value="Unassigned">Unassigned</option>
-                <option value="Zone A">Zone A</option>
-                <option value="Zone B">Zone B</option>
-                <option value="Zone C">Zone C</option>
+                <option value="Unassigned">Unassigned (Standby)</option>
+                {zones.map((z) => (
+                  <option key={z.uuid} value={z.uuid}>{z.name}</option>
+                ))}
               </select>
             </div>
           </div>
 
           <div className="pt-6 mt-6 border-t border-outline-variant/15 flex justify-end gap-3">
-            <Button type="button" variant="secondary" onClick={() => navigate('/personnel')}>
+            <Button type="button" variant="secondary" onClick={() => navigate('/personnel')} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" className="flex items-center gap-2 px-8">
-              <Shield size={16} /> Enlist Personnel
+            <Button type="submit" variant="primary" className="flex items-center gap-2 px-8" disabled={isLoading}>
+              {isLoading ? <><Loader size={16} className="animate-spin" /> Provisioning...</> : <><Shield size={16} /> Enlist Personnel</>}
             </Button>
           </div>
         </form>

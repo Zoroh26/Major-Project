@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Camera, LogOut, Map, Users, Smartphone, ChevronLeft, Menu } from 'lucide-react';
+import { LayoutDashboard, LogOut, Map, Users, ChevronLeft, Menu } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/cameras', label: 'Cameras', icon: Camera },
   { to: '/zones', label: 'Zone Mapping', icon: Map },
   { to: '/personnel', label: 'Personnel', icon: Users },
-  { to: '/guard-view', label: 'Guard Demo', icon: Smartphone },
 ];
 
 const Sidebar = () => {

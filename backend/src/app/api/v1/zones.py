@@ -216,7 +216,7 @@ async def assign_guard_to_zone(
     request: Request,
     zone_uuid: uuid_pkg.UUID,
     body: AssignGuardRequest,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> ZoneDetailRead:
     """Assign a security guard to a zone (one zone per guard enforced)"""
@@ -246,7 +246,7 @@ async def unassign_guard_from_zone(
     request: Request,
     zone_uuid: uuid_pkg.UUID,
     user_uuid: uuid_pkg.UUID,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> None:
     """Remove a guard from a zone"""

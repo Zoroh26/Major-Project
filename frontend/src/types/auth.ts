@@ -1,9 +1,12 @@
 export type User = {
-  id: string;
-  name: string;
+  id?: string;
+  uuid: string; // The backend returns uuid
+  email: string;
+  name?: string | null;
   role: 'admin' | 'employee' | 'security';
-  token: string;
-  zone?: string | null;
+  rank?: string | null;
+  token?: string; // made optional
+  zone_id?: string | null;
 };
 
 export type AuthResponse = {
@@ -19,5 +22,7 @@ export type LoginCredentials = {
 export type RegisterData = {
   email: string;
   password: string;
-  role: 'employee' | 'admin';
+  name?: string;
+  role: 'employee' | 'admin' | 'security';
+  rank?: string;
 };

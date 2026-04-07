@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { X, Loader } from 'lucide-react';
 import { addCamera } from '../services/api';
 import type { Camera } from '../services/api';
+import type { Zone } from '../types/zones';
 import { toast } from 'react-toastify';
 import { Card } from './ui/Card';
 import { Input } from './ui/Input';
@@ -11,26 +12,39 @@ import { Button } from './ui/Button';
 interface AddCameraModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (newCamera: Camera) => void;
+  onSuccess: (newCamera: Camera, zoneId?: string) => void;
+  zones?: Zone[];
+  defaultZoneId?: string | null;
 }
 
 interface FormData {
   name: string;
   location: string;
   rtsp_url: string;
+  zone_id?: string;
 }
 
-const AddCameraModal = ({ isOpen, onClose, onSuccess }: AddCameraModalProps) => {
+const AddCameraModal = ({ isOpen, onClose, onSuccess, zones = [], defaultZoneId = null }: AddCameraModalProps) => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({ zone_id: defaultZoneId || '' });
+    }
+  }, [isOpen, defaultZoneId, reset]);
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      const response = await addCamera(data);
+      const response = await addCamera({
+        name: data.name,
+        location: data.location,
+        rtsp_url: data.rtsp_url
+      });
       toast.success('Camera added successfully!');
       reset();
-      onSuccess(response.data);
+      onSuccess(response.data, data.zone_id || defaultZoneId || undefined); // Pass zone_id to ZoneMapper
       onClose();
     } catch (error: any) {
       const message = error.response?.data?.detail || error.message || 'Failed to add camera';
@@ -85,6 +99,21 @@ const AddCameraModal = ({ isOpen, onClose, onSuccess }: AddCameraModalProps) => 
               className={errors.location ? "border-error focus:border-error bg-error/5" : ""}
             />
             {errors.location && <p className="text-xs text-error mt-1">{errors.location.message}</p>}
+          </div>
+
+          {/* Assigned Zone */}
+          <div>
+            <label className="block text-[10px] font-extrabold tracking-widest text-primary/70 uppercase mb-1.5 ml-1">Assigned Zone</label>
+            <select
+              {...register('zone_id')}
+              disabled
+              className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium appearance-none"
+            >
+              <option value="">Unassigned</option>
+              {zones.map((zone) => (
+                <option key={zone.uuid} value={zone.uuid}>{zone.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* RTSP URL */}

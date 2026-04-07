@@ -1,6 +1,7 @@
 
-import axios, { AxiosError } from 'axios';
-import type { AuthResponse } from '../types/auth';
+import axios from 'axios';
+import type { AuthResponse, RegisterData, User } from '../types/auth';
+import type { Zone, ZoneDetail, ZoneCreate, ZoneUpdate, PaginatedZonesResponse } from '../types/zones';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -40,8 +41,19 @@ export const login = async (credentials: { email: string; password: string }) =>
 	return axios.post<AuthResponse>(`${API_BASE_URL}/api/v1/login`, credentials);
 };
 
-export const signup = async (data: { email: string; password: string }) => {
-	return axios.post<AuthResponse>(`${API_BASE_URL}/api/v1/user`, data);
+export const signup = async (data: RegisterData) => {
+	// this is kept for legacy auth store calls, but it actually returns UserRead
+	return axios.post(`${API_BASE_URL}/api/v1/user`, data);
+};
+
+export const createUser = async (data: RegisterData) => {
+	return axios.post<User>(`${API_BASE_URL}/api/v1/user`, data);
+};
+
+export const getUsers = async (page: number = 1, itemsPerPage: number = 10) => {
+	return axios.get<{ data: User[]; total_count: number }>(
+		`${API_BASE_URL}/api/v1/users?page=${page}&items_per_page=${itemsPerPage}`
+	);
 };
 
 export const getCurrentUser = async (token: string) => {
@@ -115,3 +127,48 @@ export const updateCamera = async (
 export const deleteCamera = async (uuid: string) => {
 	return axios.delete(`${API_BASE_URL}/api/v1/camera/${uuid}`);
 };
+
+// Zone endpoints
+export const getZones = async (page: number = 1, itemsPerPage: number = 20) => {
+	return axios.get<PaginatedZonesResponse>(
+		`${API_BASE_URL}/api/v1/zones?page=${page}&items_per_page=${itemsPerPage}`
+	);
+};
+
+export const getZone = async (uuid: string) => {
+	return axios.get<ZoneDetail>(`${API_BASE_URL}/api/v1/zone/${uuid}`);
+};
+
+export const addZone = async (data: ZoneCreate) => {
+	return axios.post<Zone>(`${API_BASE_URL}/api/v1/zone`, data);
+};
+
+export const updateZone = async (uuid: string, data: ZoneUpdate) => {
+	return axios.patch<Zone>(`${API_BASE_URL}/api/v1/zone/${uuid}`, data);
+};
+
+export const deleteZone = async (uuid: string) => {
+	return axios.delete(`${API_BASE_URL}/api/v1/zone/${uuid}`);
+};
+
+// Assignment endpoints
+export const assignCameraToZone = async (zoneUuid: string, cameraUuid: string) => {
+	return axios.post<ZoneDetail>(`${API_BASE_URL}/api/v1/zone/${zoneUuid}/assign-camera`, {
+		camera_uuid: cameraUuid
+	});
+};
+
+export const unassignCameraFromZone = async (zoneUuid: string, cameraUuid: string) => {
+	return axios.delete(`${API_BASE_URL}/api/v1/zone/${zoneUuid}/unassign-camera/${cameraUuid}`);
+};
+
+export const assignGuardToZone = async (zoneUuid: string, userUuid: string) => {
+	return axios.post<ZoneDetail>(`${API_BASE_URL}/api/v1/zone/${zoneUuid}/assign-guard`, {
+		user_uuid: userUuid
+	});
+};
+
+export const unassignGuardFromZone = async (zoneUuid: string, userUuid: string) => {
+	return axios.delete(`${API_BASE_URL}/api/v1/zone/${zoneUuid}/unassign-guard/${userUuid}`);
+};
+
