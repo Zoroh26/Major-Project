@@ -2,7 +2,7 @@ from uuid6 import uuid7
 from datetime import UTC, datetime
 import uuid as uuid_pkg
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,3 +28,7 @@ class Camera(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, default=False, index=True)
+
+    zone_id: Mapped[uuid_pkg.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("zone.uuid", ondelete="SET NULL"), nullable=True, index=True, default=None
+    )

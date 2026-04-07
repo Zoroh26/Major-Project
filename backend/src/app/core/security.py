@@ -91,9 +91,10 @@ async def verify_token(token: str, expected_token_type: TokenType, db: AsyncSess
     TokenData | None
         TokenData instance if the token is valid, None otherwise.
     """
-    is_blacklisted = await crud_token_blacklist.exists(db, token=token)
-    if is_blacklisted:
-        return None
+    # Blacklist check removed as table was dropped from DB
+    # is_blacklisted = await crud_token_blacklist.exists(db, token=token)
+    # if is_blacklisted:
+    #     return None
 
     try:
         payload = jwt.decode(

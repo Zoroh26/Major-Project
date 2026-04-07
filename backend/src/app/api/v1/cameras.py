@@ -8,6 +8,7 @@ from fastcrud.paginated import PaginatedListResponse, compute_offset, paginated_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...api.dependencies import get_current_user
+from ...schemas.user import UserRead
 from ...core.db.database import async_get_db
 from ...core.exceptions.http_exceptions import (
     BadRequestException,
@@ -106,7 +107,7 @@ def generate_stream_path(camera_name: str) -> str:
 async def create_camera(
     request: Request,
     camera: CameraCreate,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> CameraRead:
     """Create a new camera and register it in MediaMTX"""
@@ -145,7 +146,7 @@ async def create_camera(
 @router.get("/cameras", response_model=PaginatedListResponse[CameraRead])
 async def read_cameras(
     request: Request,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
     page: int = 1,
     items_per_page: int = 10,
@@ -169,7 +170,7 @@ async def read_cameras(
 async def read_camera(
     request: Request,
     camera_uuid: uuid_pkg.UUID,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> CameraRead:
     """Get a specific camera by UUID"""
@@ -187,7 +188,7 @@ async def update_camera(
     request: Request,
     camera_uuid: uuid_pkg.UUID,
     values: CameraUpdate,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> CameraRead:
     """Update a camera's name and location"""
@@ -218,7 +219,7 @@ async def update_camera(
 async def delete_camera(
     request: Request,
     camera_uuid: uuid_pkg.UUID,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> None:
     """Delete a camera (soft delete) and remove from MediaMTX"""

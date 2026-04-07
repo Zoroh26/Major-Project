@@ -72,7 +72,7 @@ async def patch_user(
     request: Request,
     values: UserUpdate,
     username: str,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> dict[str, str]:
     db_user = await crud_users.get(db=db, username=username)
@@ -86,7 +86,7 @@ async def patch_user(
         db_username = db_user.username
         db_email = db_user.email
 
-    if db_username != current_user["username"]:
+    if db_username != current_user.username:
         raise ForbiddenException()
 
     if values.email is not None and values.email != db_email:
@@ -105,7 +105,7 @@ async def patch_user(
 async def erase_user(
     request: Request,
     username: str,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
     token: str = Depends(oauth2_scheme),
 ) -> dict[str, str]:
@@ -113,7 +113,7 @@ async def erase_user(
     if not db_user:
         raise NotFoundException("User not found")
 
-    if username != current_user["username"]:
+    if username != current_user.username:
         raise ForbiddenException()
 
     await crud_users.delete(db=db, username=username)

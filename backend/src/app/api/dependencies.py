@@ -10,32 +10,34 @@ from ..core.logger import logging
 from ..core.security import TokenType, oauth2_scheme, verify_token
 
 from ..crud.crud_users import crud_users
+from ..schemas.user import UserRead
 
 logger = logging.getLogger(__name__)
 
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(async_get_db)]
-) -> dict[str, Any] | None:
+) -> UserRead:
     token_data = await verify_token(token, TokenType.ACCESS, db)
     if token_data is None:
         raise UnauthorizedException("User not authenticated.")
 
-    # In our login.py, we set "sub" to the user's UUID.
-    # verify_token puts this "sub" into token_data.username_or_email.
-    user_uuid = token_data.username_or_email
+    user_uuid_str = token_data.username_or_email
 
-    # If it happens to be an email due to old tokens or differing endpoints:
-    if "@" in user_uuid:
-        user = await crud_users.get(db=db, email=user_uuid, is_deleted=False)
+    # Fetch user from DB using the proper schema
+    if "@" in user_uuid_str:
+        user = await crud_users.get(db=db, email=user_uuid_str, is_deleted=False, schema_to_select=UserRead)
     else:
-        user = await crud_users.get(db=db, uuid=user_uuid, is_deleted=False)
+        # UUID comparison
+        try:
+            import uuid as uuid_pkg
+            user_uuid = uuid_pkg.UUID(user_uuid_str)
+            user = await crud_users.get(db=db, uuid=user_uuid, is_deleted=False, schema_to_select=UserRead)
+        except ValueError:
+            user = await crud_users.get(db=db, uuid=user_uuid_str, is_deleted=False, schema_to_select=UserRead)
 
     if user:
-        if hasattr(user, 'model_dump'):
-            return user.model_dump()
-        else:
-            return user
+        return cast(UserRead, user)
 
     raise UnauthorizedException("User not authenticated.")
 

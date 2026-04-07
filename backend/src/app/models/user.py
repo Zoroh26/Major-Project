@@ -15,7 +15,11 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String)
     role: Mapped[str] = mapped_column(String(20), default="user")
-    zone: Mapped[str | None] = mapped_column(String(20), default=None, nullable=True)
+    name: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)
+    rank: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
+    zone_id: Mapped[uuid_pkg.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("zone.uuid", ondelete="SET NULL"), nullable=True, index=True, default=None
+    )
     uuid: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default_factory=uuid7, unique=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -25,3 +29,4 @@ class User(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None)
     is_deleted: Mapped[bool] = mapped_column(default=False, index=True)
+
