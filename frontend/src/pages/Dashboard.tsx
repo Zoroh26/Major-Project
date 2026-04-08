@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
 import SecurityDashboard from './SecurityDashboard';
-import AdminDashboard from './AdminDashboard';
 import CameraGridDashboard from './CameraGridDashboard';
 
 const Dashboard = () => {
@@ -33,7 +32,7 @@ const Dashboard = () => {
   }
 
   if (user?.role === 'admin') {
-    return <AdminDashboard />;
+    return <CameraGridDashboard />;
   }
 
   // Default to camera grid dashboard for employees or other roles

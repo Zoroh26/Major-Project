@@ -1,16 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CameraFeed from '../components/CameraFeed';
 import HeatMap from '../components/HeatMap';
 import DataPanel from '../components/DataPanel';
 import { useAuthStore } from '../store/auth';
+import { useZoneStore } from '../store/zones';
 import { dispatchAlert } from '../services/api';
+import { EscalationsWidget } from '../components/EscalationsWidget';
+import { CreateEscalationModal } from '../components/CreateEscalationModal';
+import { EscalationsList } from '../components/EscalationsList';
+import { EscalationDetail } from '../components/EscalationDetail';
 
 const ALERT_ZONES = ["top-left", "top-right", "bottom-left", "bottom-right"];
 
 const AdminDashboard = () => {
   const { user } = useAuthStore();
+  const { zones, guards, fetchZones, fetchGuards } = useZoneStore();
   const [selectedZones, setSelectedZones] = useState<string[]>([]);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  // Fetch zones + guards for the create escalation modal
+  useEffect(() => {
+    fetchZones();
+    fetchGuards();
+  }, [fetchZones, fetchGuards]);
+
+  // Escalation modal state
+  const [showCreateEscalation, setShowCreateEscalation] = useState(false);
+  const [showEscalationsList, setShowEscalationsList] = useState(false);
+  const [showEscalationDetail, setShowEscalationDetail] = useState(false);
+  const [selectedEscalationUuid, setSelectedEscalationUuid] = useState<string | null>(null);
+
+  const handleSelectEscalation = (uuid: string) => {
+    setSelectedEscalationUuid(uuid);
+    setShowEscalationDetail(true);
+    setShowEscalationsList(false);
+  };
 
   const toggleZone = (zone: string) => {
     setSelectedZones(prev => 
@@ -103,9 +127,18 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Row 4: Metrics Footer */}
-        <div className="col-span-4 bg-card rounded-lg border border-border p-3 overflow-hidden">
-          <DataPanel />
+        {/* Row 4: Escalations Widget + Metrics */}
+        <div className="col-span-4 bg-card rounded-lg border border-border p-3 overflow-hidden flex gap-3">
+          <div className="flex-1 overflow-hidden">
+            <DataPanel />
+          </div>
+          <div className="w-96 shrink-0 overflow-hidden">
+            <EscalationsWidget
+              currentUserRole="admin"
+              onCreateEscalation={() => setShowCreateEscalation(true)}
+              onOpenEscalations={() => setShowEscalationsList(true)}
+            />
+          </div>
         </div>
       </div>
 
@@ -143,6 +176,47 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Escalation Modals */}
+      {showCreateEscalation && (
+        <CreateEscalationModal
+          isOpen={showCreateEscalation}
+          onClose={() => setShowCreateEscalation(false)}
+          zones={zones.map(z => ({ uuid: z.uuid, name: z.name }))}
+          securityPersonnel={guards.map(g => ({ uuid: g.uuid || g.id || '', email: g.email, name: g.name ?? undefined }))}
+        />
+      )}
+
+      {showEscalationsList && (
+        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-16 p-4">
+          <div className="w-full max-w-5xl bg-card rounded-xl border border-border shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <h2 className="text-xl font-bold text-primary">All Escalations</h2>
+              <button
+                onClick={() => setShowEscalationsList(false)}
+                className="text-primary/40 hover:text-primary transition-colors text-sm font-medium"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              <EscalationsList
+                currentUserRole="admin"
+                onSelectEscalation={handleSelectEscalation}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEscalationDetail && (
+        <EscalationDetail
+          escalationUuid={selectedEscalationUuid}
+          onClose={() => setShowEscalationDetail(false)}
+          currentUserRole="admin"
+          currentUserUuid={user?.uuid}
+        />
       )}
     </div>
   );

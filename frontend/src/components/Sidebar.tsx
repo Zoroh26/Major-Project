@@ -35,7 +35,7 @@ const Sidebar = () => {
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 flex flex-col gap-1 p-2 pt-4">
+      <nav className="flex-1 flex flex-col gap-1 p-2 pt-4 min-h-0 overflow-y-auto">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -59,8 +59,8 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Logout */}
-      <div className="p-2 pb-4 border-t border-outline-variant/15">
+      {/* Logout - Always visible at bottom */}
+      <div className="shrink-0 p-2 pb-4 border-t border-outline-variant/15">
         <button
           onClick={logout}
           className={`w-full flex items-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-all duration-200 whitespace-nowrap

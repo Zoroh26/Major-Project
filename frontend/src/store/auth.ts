@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import { login as loginApi, signup as signupApi, getCurrentUser } from '../services/api';
 import type { User, RegisterData } from '../types/auth';
 
+const normalizeRole = (role: string | null | undefined): User['role'] => {
+	const normalized = (role || '').toLowerCase();
+	if (normalized === 'admin' || normalized === 'administrator' || normalized === 'user') return 'admin';
+	if (normalized === 'security' || normalized === 'guard') return 'security';
+	return 'employee';
+};
+
 type AuthState = {
 	user: User | null;
 	isLoggedIn: boolean;
@@ -33,9 +40,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 			
 			const userObj: User = { 
 				id: userData.uuid || '',
+				uuid: userData.uuid || '',
 				email: userData.email,
 				name: userData.name || userData.email, 
-				role: userData.role || 'employee',
+				role: normalizeRole(userData.role),
 				rank: userData.rank || null,
 				token: access_token,
 				zone_id: userData.zone_id || null
@@ -112,9 +120,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 			
 			const reqUserObj: User = {
 				id: sessionUser.id,
+				uuid: sessionUser.uuid || sessionUser.id,
 				email: sessionUser.email,
 				name: sessionUser.name,
-				role: sessionUser.role,
+				role: normalizeRole(sessionUser.role),
 				rank: sessionUser.rank,
 				token,
 				zone_id: sessionUser.zone_id
