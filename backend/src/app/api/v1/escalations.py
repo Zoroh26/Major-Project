@@ -26,6 +26,27 @@ def _is_admin_role(role: str | None) -> bool:
     return role in ["admin", "user"]
 
 
+async def _get_escalation_with_relations(db: AsyncSession, escalation_uuid: UUID) -> Escalation | None:
+    """Load one escalation with relationships required by response schemas."""
+    query = (
+        select(Escalation)
+        .options(
+            selectinload(Escalation.zone),
+            selectinload(Escalation.camera),
+            selectinload(Escalation.assigned_to),
+            selectinload(Escalation.created_by),
+        )
+        .where(
+            and_(
+                Escalation.uuid == escalation_uuid,
+                Escalation.is_deleted == False,
+            )
+        )
+    )
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
+
+
 @router.post("", response_model=EscalationResponse, status_code=status.HTTP_201_CREATED)
 async def create_escalation(
     escalation_data: EscalationCreate,
@@ -44,6 +65,7 @@ async def create_escalation(
 
     new_escalation = Escalation(
         zone_uuid=escalation_data.zone_uuid,
+        camera_uuid=escalation_data.camera_uuid,
         title=escalation_data.title,
         description=escalation_data.description,
         priority=escalation_data.priority,
@@ -53,9 +75,7 @@ async def create_escalation(
 
     db.add(new_escalation)
     await db.commit()
-    await db.refresh(new_escalation)
-
-    return new_escalation
+    return await _get_escalation_with_relations(db, new_escalation.uuid)
 
 
 @router.get("", response_model=List[EscalationList])
@@ -68,11 +88,13 @@ async def list_escalations(
 ):
     """
     List escalations with optional filtering.
-    Admins see all, security personnel see only their assigned and zone escalations.
+    Returns all escalations visible to authenticated users.
     """
     query = (
         select(Escalation)
         .options(
+            selectinload(Escalation.zone),
+            selectinload(Escalation.camera),
             selectinload(Escalation.assigned_to),
             selectinload(Escalation.created_by),
         )
@@ -87,16 +109,6 @@ async def list_escalations(
 
     if priority_filter:
         query = query.where(Escalation.priority == priority_filter)
-
-    # Security personnel see only their assigned and zone escalations
-    if not _is_admin_role(current_user["role"]):
-        query = query.where(
-            or_(
-                Escalation.assigned_to_uuid == current_user["uuid"],
-                Escalation.zone_uuid == current_user["zone_id"],
-                Escalation.created_by_uuid == current_user["uuid"],
-            )
-        )
 
     query = query.order_by(desc(Escalation.created_at))
     result = await db.execute(query)
@@ -115,10 +127,19 @@ async def get_escalation_detail(
     Get a specific escalation detail.
     Authorized users must be admin, assigned to, or in the same zone.
     """
-    query = select(Escalation).where(
-        and_(
-            Escalation.uuid == escalation_uuid,
-            Escalation.is_deleted == False
+    query = (
+        select(Escalation)
+        .options(
+            selectinload(Escalation.zone),
+            selectinload(Escalation.camera),
+            selectinload(Escalation.assigned_to),
+            selectinload(Escalation.created_by),
+        )
+        .where(
+            and_(
+                Escalation.uuid == escalation_uuid,
+                Escalation.is_deleted == False
+            )
         )
     )
     result = await db.execute(query)
@@ -194,9 +215,7 @@ async def update_escalation(
     escalation.updated_at = datetime.now(UTC)
     db.add(escalation)
     await db.commit()
-    await db.refresh(escalation)
-
-    return escalation
+    return await _get_escalation_with_relations(db, escalation.uuid)
 
 
 @router.post("/{escalation_uuid}/act", response_model=EscalationResponse)
@@ -241,9 +260,7 @@ async def act_on_escalation(
     escalation.mark_acted_upon(action_data.action_taken)
     db.add(escalation)
     await db.commit()
-    await db.refresh(escalation)
-
-    return escalation
+    return await _get_escalation_with_relations(db, escalation.uuid)
 
 
 @router.post("/{escalation_uuid}/resolve", response_model=EscalationResponse)
@@ -280,9 +297,7 @@ async def resolve_escalation(
     escalation.mark_resolved()
     db.add(escalation)
     await db.commit()
-    await db.refresh(escalation)
-
-    return escalation
+    return await _get_escalation_with_relations(db, escalation.uuid)
 
 
 @router.post("/{escalation_uuid}/false-alarm", response_model=EscalationResponse)
@@ -319,9 +334,7 @@ async def mark_false_alarm(
     escalation.mark_false_alarm()
     db.add(escalation)
     await db.commit()
-    await db.refresh(escalation)
-
-    return escalation
+    return await _get_escalation_with_relations(db, escalation.uuid)
 
 
 @router.get("/stats/summary", response_model=dict)

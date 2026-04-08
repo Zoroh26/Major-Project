@@ -14,6 +14,7 @@ const CameraGridDashboard = () => {
   const { zones, guards, fetchZones, fetchGuards } = useZoneStore();
   const [showCreateEscalation, setShowCreateEscalation] = useState(false);
   const [selectedZoneUuid, setSelectedZoneUuid] = useState<string | null>(null);
+  const [selectedCameraUuid, setSelectedCameraUuid] = useState<string | null>(null);
   const [cameraZoneMap, setCameraZoneMap] = useState<Record<string, { zoneUuid: string; zoneName: string }>>({});
   const canCreateEscalation = user?.role === 'admin';
 
@@ -126,6 +127,7 @@ const CameraGridDashboard = () => {
                         onClick={async () => {
                           const resolvedZoneUuid = await resolveCameraZoneUuid(camera);
                           setSelectedZoneUuid(resolvedZoneUuid);
+                          setSelectedCameraUuid(camera.uuid);
                           setShowCreateEscalation(true);
                         }}
                         className="flex items-center gap-1.5 text-xs font-bold bg-red-500/10 text-red-500 px-3 py-1.5 rounded hover:bg-red-500 hover:text-white transition-colors border border-red-500/40"
@@ -156,10 +158,12 @@ const CameraGridDashboard = () => {
           onClose={() => {
             setShowCreateEscalation(false);
             setSelectedZoneUuid(null);
+            setSelectedCameraUuid(null);
           }}
           zones={zones.map(z => ({ uuid: z.uuid, name: z.name }))}
           securityPersonnel={guards.map(g => ({ uuid: g.uuid || g.id || '', email: g.email, name: g.name ?? undefined }))}
           preselectedZoneUuid={selectedZoneUuid ?? undefined}
+          preselectedCameraUuid={selectedCameraUuid ?? undefined}
           lockZoneSelection={Boolean(selectedZoneUuid)}
         />
       )}

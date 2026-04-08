@@ -4,6 +4,7 @@ import { EscalationNotification } from './EscalationNotification';
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
+  '/escalations': 'Escalations',
   '/cameras': 'Cameras',
 };
 

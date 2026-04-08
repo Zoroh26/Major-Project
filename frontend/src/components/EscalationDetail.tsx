@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useEscalationStore } from "../store/escalations";
+import { escalationService } from "../services/escalation";
+import type { Escalation } from "../services/escalation";
 import { X, Check, AlertTriangle } from "lucide-react";
 
 interface EscalationDetailProps {
@@ -31,15 +33,51 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
   currentUserRole,
   currentUserUuid,
 }) => {
-  const { escalations, actOnEscalation, resolveEscalation, markFalseAlarm, isLoading } =
+  const { escalations, fetchEscalations, actOnEscalation, resolveEscalation, markFalseAlarm } =
     useEscalationStore();
 
   const [actionText, setActionText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [liveEscalation, setLiveEscalation] = useState<Escalation | null>(null);
+  const [statusOverride, setStatusOverride] = useState<Escalation["status"] | null>(null);
 
-  const escalation = escalations.find((e) => e.uuid === escalationUuid);
+  const escalation = liveEscalation || escalations.find((e) => e.uuid === escalationUuid);
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return "-";
+    return new Date(value).toLocaleString();
+  };
+
+  useEffect(() => {
+    if (!escalationUuid) return;
+
+    const fetchLiveEscalation = async () => {
+      try {
+        const detailed = await escalationService.getEscalation(escalationUuid);
+        setLiveEscalation(detailed);
+      } catch {
+        // Keep store-based fallback if detail fetch fails.
+      }
+    };
+
+    fetchEscalations();
+    fetchLiveEscalation();
+    const interval = setInterval(() => {
+      fetchEscalations();
+      fetchLiveEscalation();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [escalationUuid, fetchEscalations]);
+
+  useEffect(() => {
+    if (!escalationUuid) {
+      setLiveEscalation(null);
+      setStatusOverride(null);
+    }
+  }, [escalationUuid]);
 
   if (!escalationUuid || !escalation) {
     return null;
@@ -71,12 +109,14 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
   };
 
   const handleResolve = async () => {
+    if (!isStatusActionable) return;
     setIsSubmitting(true);
     setError("");
     setSuccess("");
 
     try {
       await resolveEscalation(escalationUuid);
+      setStatusOverride("resolved");
       setSuccess("Escalation resolved successfully");
       setTimeout(() => {
         onClose();
@@ -91,6 +131,7 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
   };
 
   const handleFalseAlarm = async () => {
+    if (!isStatusActionable) return;
     if (!window.confirm("Mark this as a false alarm?")) return;
 
     setIsSubmitting(true);
@@ -99,6 +140,7 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
 
     try {
       await markFalseAlarm(escalationUuid);
+      setStatusOverride("false_alarm");
       setSuccess("Marked as false alarm");
       setTimeout(() => {
         onClose();
@@ -112,37 +154,46 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
     }
   };
 
-  const isAssignedToMe = escalation.assigned_to === currentUserUuid;
+  const isAssignedToMe = escalation.assigned_to_uuid === currentUserUuid;
   const canAct = isAssignedToMe && !escalation.is_acted_upon;
   const canResolve = isAssignedToMe || currentUserRole === "admin";
+  const effectiveStatus = statusOverride ?? escalation.status;
+  const isStatusActionable = effectiveStatus === "pending" || effectiveStatus === "in_progress";
+  const canFinalize = canResolve && isStatusActionable;
+  const zoneDisplay = escalation.zone_name || escalation.zone_uuid || "Unknown";
+  const cameraDisplay = escalation.camera_name || escalation.camera_uuid || "Unknown";
+  const assignedToDisplay = escalation.assigned_to_name || escalation.assigned_to_uuid || "Unassigned";
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50">
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60">
+      <div className="flex min-h-screen items-center justify-center px-4 py-8">
+        <div className="w-full max-w-4xl rounded-2xl border border-outline-variant/20 bg-surface-container-low shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-bold text-gray-900">Escalation Details</h2>
+          <div className="flex items-center justify-between border-b border-outline-variant/20 px-6 py-4">
+            <div>
+              <h2 className="text-xl font-bold text-primary">Escalation Details</h2>
+              <p className="text-xs text-primary/60">Incident {escalation.uuid}</p>
+            </div>
             <button
               onClick={onClose}
-              className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              className="rounded p-1 text-primary/40 hover:bg-surface-container hover:text-primary"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-4">
+          <div className="max-h-[70vh] overflow-y-auto px-6 py-4">
             {/* Alert Messages */}
             {error && (
-              <div className="mb-4 flex gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+              <div className="mb-4 flex gap-3 rounded-lg bg-error/10 p-3 text-sm text-error">
                 <AlertTriangle className="h-5 w-5 flex-shrink-0" />
                 <p>{error}</p>
               </div>
             )}
 
             {success && (
-              <div className="mb-4 flex gap-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">
+              <div className="mb-4 flex gap-3 rounded-lg bg-green-500/10 p-3 text-sm text-green-700">
                 <Check className="h-5 w-5 flex-shrink-0" />
                 <p>{success}</p>
               </div>
@@ -151,15 +202,15 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
             {/* Title and Status */}
             <div className="mb-4">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-2xl font-bold text-gray-900">
+                <h3 className="text-2xl font-bold text-primary">
                   {escalation.title}
                 </h3>
                 <span
-                  className={`rounded-lg px-3 py-1 text-sm font-bold uppercase ${
-                    statusColors[escalation.status as keyof typeof statusColors]
+                  className={`rounded-lg px-3 py-1 text-sm font-bold uppercase tracking-wide ${
+                    statusColors[effectiveStatus as keyof typeof statusColors]
                   }`}
                 >
-                  {escalation.status}
+                  {effectiveStatus}
                 </span>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -172,36 +223,39 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
             </div>
 
             {/* Description and Metadata */}
-            <div className={`rounded-lg p-4 ${priorityColors[escalation.priority as keyof typeof priorityColors]}`}>
-              <h4 className="mb-2 font-semibold text-gray-900">Description</h4>
-              <p className="mb-4 text-gray-700">{escalation.description}</p>
+            <div className={`rounded-xl p-4 ${priorityColors[escalation.priority as keyof typeof priorityColors]}`}>
+              <h4 className="mb-2 font-semibold text-primary">Description</h4>
+              <p className="mb-4 text-primary/80">{escalation.description}</p>
 
               {/* Details Grid */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
                 <div>
-                  <p className="text-gray-600">Zone</p>
-                  <p className="font-semibold text-gray-900">
-                    {escalation.zone_name || "Unknown"}
+                  <p className="text-primary/60">Zone</p>
+                  <p className="font-semibold text-primary">
+                    {zoneDisplay}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Camera</p>
-                  <p className="font-semibold text-gray-900">
-                    {escalation.camera_name || "Unknown"}
+                  <p className="text-primary/60">Camera</p>
+                  <p className="font-semibold text-primary">
+                    {cameraDisplay}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Created</p>
-                  <p className="font-semibold text-gray-900">
-                    {new Date(escalation.created_at).toLocaleString()}
-                  </p>
+                  <p className="text-primary/60">Created</p>
+                  <p className="font-semibold text-primary">{formatDateTime(escalation.created_at)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Assigned To</p>
-                  <p className="font-semibold text-gray-900">
-                    {escalation.assigned_to_name || "Unassigned"}
+                  <p className="text-primary/60">Assigned To</p>
+                  <p className="font-semibold text-primary">
+                    {assignedToDisplay}
                   </p>
                 </div>
+              </div>
+
+              <div className="mt-4 rounded-lg border border-outline-variant/20 bg-surface-container-lowest p-3 text-sm">
+                <p className="mb-1 font-semibold text-primary">Latest Action</p>
+                <p className="text-primary/80">{escalation.action_taken || "No action note yet."}</p>
               </div>
 
               {/* Status Indicators */}
@@ -216,28 +270,28 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <Check className="h-4 w-4" />
                     <span>
-                      Resolved on{" "}
-                      {new Date(escalation.resolved_at).toLocaleString()}
+                      Resolved on {formatDateTime(escalation.resolved_at)}
                     </span>
                   </div>
                 )}
+                <div className="text-xs text-primary/60">Last updated: {formatDateTime(escalation.updated_at || escalation.created_at)}</div>
               </div>
             </div>
 
             {/* Actions */}
-            {escalation.status !== "resolved" && (
+            {(effectiveStatus !== "resolved" && effectiveStatus !== "false_alarm") && (
               <div className="mt-6 space-y-4">
                 {/* Act On Section */}
                 {canAct && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <label className="mb-2 block font-semibold text-gray-900">
+                  <div className="rounded-lg border border-blue-300/40 bg-blue-500/10 p-4">
+                    <label className="mb-2 block font-semibold text-primary">
                       Record Action
                     </label>
                     <textarea
                       value={actionText}
                       onChange={(e) => setActionText(e.target.value)}
                       placeholder="Describe the action taken on this incident..."
-                      className="mb-3 w-full resize-none rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      className="mb-3 w-full resize-none rounded border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-primary focus:border-primary/50 focus:outline-none"
                       rows={3}
                       disabled={isSubmitting}
                     />
@@ -251,31 +305,16 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
                   </div>
                 )}
 
-                {/* Resolve and False Alarm Buttons */}
-                <div className="flex gap-2">
-                  {canResolve && (
-                    <button
-                      onClick={handleResolve}
-                      disabled={isSubmitting}
-                      className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:bg-gray-300"
-                    >
-                      {isSubmitting ? "Resolving..." : "✓ Resolve"}
-                    </button>
-                  )}
-                  {canResolve && (
-                    <button
-                      onClick={handleFalseAlarm}
-                      disabled={isSubmitting}
-                      className="flex-1 rounded-lg bg-yellow-600 px-4 py-2 font-semibold text-white hover:bg-yellow-700 disabled:bg-gray-300"
-                    >
-                      {isSubmitting ? "Marking..." : "✗ False Alarm"}
-                    </button>
-                  )}
-                </div>
+
+                {canResolve && !isStatusActionable && (
+                  <div className="rounded-lg bg-surface-container p-3 text-sm text-primary/70">
+                    Resolve and False Alarm are only available when status is pending or in progress.
+                  </div>
+                )}
 
                 {/* Permission Message */}
                 {!canAct && !canResolve && (
-                  <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
+                  <div className="rounded-lg bg-surface-container p-3 text-sm text-primary/70">
                     You don't have permission to act on this escalation.
                   </div>
                 )}
@@ -284,10 +323,10 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end border-t border-gray-200 px-6 py-3">
+          <div className="flex justify-end border-t border-outline-variant/20 px-6 py-3">
             <button
               onClick={onClose}
-              className="rounded-lg bg-gray-100 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-200"
+              className="rounded-lg bg-surface-container px-4 py-2 font-semibold text-primary hover:bg-surface-container-high"
             >
               Close
             </button>

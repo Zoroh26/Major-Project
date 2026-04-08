@@ -124,3 +124,23 @@ class Escalation(Base):
         self.status = EscalationStatus.FALSE_ALARM
         self.resolved_at = datetime.now(UTC)
         self.updated_at = datetime.now(UTC)
+
+    @property
+    def zone_name(self) -> str | None:
+        """Human-readable zone name for API responses."""
+        return self.zone.name if self.zone else None
+
+    @property
+    def camera_name(self) -> str | None:
+        """Human-readable camera name for API responses."""
+        return self.camera.name if self.camera else None
+
+    @property
+    def assigned_to_name(self) -> str | None:
+        """Human-readable assignee name for API responses."""
+        return self.assigned_to.name if self.assigned_to else None
+
+    @property
+    def created_by_name(self) -> str | None:
+        """Human-readable creator name for API responses."""
+        return self.created_by.name if self.created_by else None

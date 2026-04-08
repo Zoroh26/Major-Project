@@ -245,7 +245,7 @@ export const EscalationsList: React.FC<EscalationsListProps> = ({
                       {escalation.zone_name || "Unknown Zone"}
                     </span>
                     {escalation.assigned_to_name && (
-                      <span>📋 Assigned to: {escalation.assigned_to_name}</span>
+                      <span>Assigned to: {escalation.assigned_to_name}</span>
                     )}
                     {escalation.is_acted_upon && (
                       <span className="text-blue-600">✓ Acted Upon</span>

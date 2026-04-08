@@ -27,6 +27,17 @@ interface EscalationStore {
 
 let pollingInterval: ReturnType<typeof setTimeout> | null = null;
 
+const getCurrentUserUuid = (): string | null => {
+  try {
+    const raw = localStorage.getItem("currentUser");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { uuid?: string; id?: string };
+    return parsed.uuid || parsed.id || null;
+  } catch {
+    return null;
+  }
+};
+
 export const useEscalationStore = create<EscalationStore>((set, get) => ({
   // State
   escalations: [],
@@ -54,9 +65,12 @@ export const useEscalationStore = create<EscalationStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const escalations = await escalationService.listEscalations();
-      // Filter escalations assigned to current user (would need current user UUID)
-      // For now we're filtering on status = 'assigned' and relabel with the user context
-      const assigned = escalations.filter((e) => e.status !== "resolved" && e.status !== "false_alarm");
+      const currentUserUuid = getCurrentUserUuid();
+      const assigned = escalations.filter((e) => {
+        if (e.status === "resolved" || e.status === "false_alarm") return false;
+        if (!currentUserUuid) return false;
+        return e.assigned_to_uuid === currentUserUuid;
+      });
       
       const previousCount = get().assignedToMe.length;
       set({ assignedToMe: assigned, isLoading: false });
@@ -142,7 +156,21 @@ export const useEscalationStore = create<EscalationStore>((set, get) => ({
   },
 
   resolveEscalation: async (uuid) => {
-    set({ isLoading: true, error: null });
+    const previousEscalations = get().escalations;
+    const previousAssigned = get().assignedToMe;
+    const nowIso = new Date().toISOString();
+
+    set({
+      isLoading: true,
+      error: null,
+      escalations: previousEscalations.map((e) =>
+        e.uuid === uuid
+          ? { ...e, status: "resolved", resolved_at: nowIso, updated_at: nowIso }
+          : e
+      ),
+      assignedToMe: previousAssigned.filter((e) => e.uuid !== uuid),
+    });
+
     try {
       const escalation = await escalationService.resolveEscalation(uuid);
       
@@ -156,13 +184,38 @@ export const useEscalationStore = create<EscalationStore>((set, get) => ({
       return escalation;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Failed to resolve escalation";
-      set({ error: errorMsg, isLoading: false });
+      set({
+        error: errorMsg,
+        isLoading: false,
+        escalations: previousEscalations,
+        assignedToMe: previousAssigned,
+      });
       throw error;
     }
   },
 
   markFalseAlarm: async (uuid) => {
-    set({ isLoading: true, error: null });
+    const previousEscalations = get().escalations;
+    const previousAssigned = get().assignedToMe;
+    const nowIso = new Date().toISOString();
+
+    set({
+      isLoading: true,
+      error: null,
+      escalations: previousEscalations.map((e) =>
+        e.uuid === uuid
+          ? {
+              ...e,
+              status: "false_alarm",
+              is_false_alarm: true,
+              resolved_at: nowIso,
+              updated_at: nowIso,
+            }
+          : e
+      ),
+      assignedToMe: previousAssigned.filter((e) => e.uuid !== uuid),
+    });
+
     try {
       const escalation = await escalationService.markFalseAlarm(uuid);
       
@@ -176,7 +229,12 @@ export const useEscalationStore = create<EscalationStore>((set, get) => ({
       return escalation;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Failed to mark as false alarm";
-      set({ error: errorMsg, isLoading: false });
+      set({
+        error: errorMsg,
+        isLoading: false,
+        escalations: previousEscalations,
+        assignedToMe: previousAssigned,
+      });
       throw error;
     }
   },
@@ -190,7 +248,7 @@ export const useEscalationStore = create<EscalationStore>((set, get) => ({
 
     pollingInterval = setInterval(() => {
       get().fetchAssignedToMe();
-    }, 5000); // Poll every 5 seconds
+    }, 3000); // Poll every 3 seconds
   },
 
   stopPolling: () => {

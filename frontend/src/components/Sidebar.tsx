@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Map, Users, ChevronLeft, Menu } from 'lucide-react';
+import { LayoutDashboard, LogOut, Map, Users, ChevronLeft, Menu, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/escalations', label: 'Escalations', icon: AlertTriangle },
   { to: '/zones', label: 'Zone Mapping', icon: Map },
   { to: '/personnel', label: 'Personnel', icon: Users },
 ];

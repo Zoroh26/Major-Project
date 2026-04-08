@@ -8,6 +8,7 @@ interface CreateEscalationModalProps {
   zones: Array<{ uuid: string; name: string }>;
   securityPersonnel: Array<{ uuid: string; email: string; name?: string }>;
   preselectedZoneUuid?: string;
+  preselectedCameraUuid?: string;
   lockZoneSelection?: boolean;
 }
 
@@ -24,6 +25,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationModalProps> = ({
   zones,
   securityPersonnel,
   preselectedZoneUuid,
+  preselectedCameraUuid,
   lockZoneSelection = false,
 }) => {
   const createEscalation = useEscalationStore((state) => state.createEscalation);
@@ -72,6 +74,7 @@ export const CreateEscalationModal: React.FC<CreateEscalationModalProps> = ({
       // Create escalation
       const escalation = await createEscalation({
         zone_uuid: formData.zone_uuid,
+        camera_uuid: preselectedCameraUuid,
         title: formData.title,
         description: formData.description,
         priority: formData.priority,

@@ -78,6 +78,10 @@ class EscalationResponse(EscalationBase):
     uuid: UUID
     assigned_to_uuid: Optional[UUID] = None
     created_by_uuid: UUID
+    zone_name: Optional[str] = None
+    camera_name: Optional[str] = None
+    assigned_to_name: Optional[str] = None
+    created_by_name: Optional[str] = None
     status: EscalationStatus
     priority: EscalationPriority
     action_taken: Optional[str] = None
@@ -105,6 +109,10 @@ class EscalationList(BaseModel):
     is_false_alarm: bool
     created_at: datetime
     resolved_at: Optional[datetime] = None
+    zone_name: Optional[str] = None
+    camera_name: Optional[str] = None
+    assigned_to_name: Optional[str] = None
+    created_by_name: Optional[str] = None
 
     # Minimal user info
     assigned_to: Optional[UserMinimal] = None
