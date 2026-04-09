@@ -3,7 +3,7 @@ export type User = {
   uuid: string; // The backend returns uuid
   email: string;
   name?: string | null;
-  role: 'admin' | 'employee' | 'security';
+  role: 'admin' | 'employee' | 'security' | 'user';
   rank?: string | null;
   token?: string; // made optional
   zone_id?: string | null;
@@ -23,6 +23,6 @@ export type RegisterData = {
   email: string;
   password: string;
   name?: string;
-  role: 'employee' | 'admin' | 'security';
+  role?: 'user' | 'security';
   rank?: string;
 };

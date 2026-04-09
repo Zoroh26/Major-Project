@@ -15,6 +15,8 @@ const SecurityRegistration: React.FC = () => {
     lastName: '',
     badgeId: '',
     email: '',
+    password: '',
+    role: 'security' as 'security' | 'user',
     rank: 'Security Guard',
     zone: 'Unassigned',
   });
@@ -34,23 +36,21 @@ const SecurityRegistration: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // 1. Create the user
-      const defaultPassword = 'Test@123';
       const res = await createUser({
         email: formData.email,
-        password: defaultPassword,
+        password: formData.password,
         name: `${formData.firstName} ${formData.lastName}`.trim(),
-        role: 'security',
+        role: formData.role,
         rank: formData.rank
       });
       const newUserId = (res.data as any).uuid || res.data.id;
 
       // 2. Assign zone if applicable
-      if (formData.zone !== 'Unassigned') {
+      if (formData.role === 'security' && formData.zone !== 'Unassigned') {
         await assignGuard(formData.zone, newUserId);
       }
 
-      toast.success(`Personnel registered! Temporary password is ${defaultPassword}`);
+      toast.success('Personnel registered successfully.');
       navigate('/personnel');
     } catch (err: any) {
       toast.error(err.response?.data?.detail || err.message || 'Failed to register personnel');
@@ -126,6 +126,29 @@ const SecurityRegistration: React.FC = () => {
               required
             />
 
+            <Input
+              label="Login Password"
+              type="password"
+              name="password"
+              placeholder="Enter secure password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+
+            <div className="flex flex-col">
+              <label className="text-xs font-bold text-primary uppercase tracking-widest mb-2">Role</label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full bg-surface-container-low border border-outline-variant/30 text-primary text-sm rounded-lg focus:ring-primary focus:border-primary block p-3 min-h-[46px]"
+              >
+                <option value="security">Security</option>
+                <option value="user">User (Admin Equivalent)</option>
+              </select>
+            </div>
+
             <div className="flex flex-col">
               <label className="text-xs font-bold text-primary uppercase tracking-widest mb-2">Assignment Rank</label>
               <select
@@ -147,6 +170,7 @@ const SecurityRegistration: React.FC = () => {
                 name="zone"
                 value={formData.zone}
                 onChange={handleChange}
+                disabled={formData.role !== 'security'}
                 className="w-full bg-surface-container-low border border-outline-variant/30 text-primary text-sm rounded-lg focus:ring-primary focus:border-primary block p-3 min-h-[46px]"
               >
                 <option value="Unassigned">Unassigned (Standby)</option>
@@ -154,6 +178,9 @@ const SecurityRegistration: React.FC = () => {
                   <option key={z.uuid} value={z.uuid}>{z.name}</option>
                 ))}
               </select>
+              {formData.role !== 'security' && (
+                <p className="mt-1 text-xs text-primary/60">Zone assignment is available only for security role.</p>
+              )}
             </div>
           </div>
 

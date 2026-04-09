@@ -4,7 +4,7 @@ import uuid as uuid_pkg
 
 from sqlalchemy import Boolean, DateTime, Float, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.db.database import Base
 
@@ -12,8 +12,10 @@ from ..core.db.database import Base
 class Zone(Base):
     __tablename__ = "zone"
 
-    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
-    description: Mapped[str | None] = mapped_column(String(500), default=None, nullable=True)
+    name: Mapped[str] = mapped_column(
+        String(100), nullable=False, unique=True, index=True)
+    description: Mapped[str | None] = mapped_column(
+        String(500), default=None, nullable=True)
     alert_threshold: Mapped[float] = mapped_column(Float, default=0.85)
     uuid: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default_factory=uuid7, unique=True
@@ -24,5 +26,8 @@ class Zone(Base):
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None
     )
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean, default=False, index=True)
 
+    # Relationships
+    escalations = relationship("Escalation", back_populates="zone")

@@ -31,6 +31,14 @@ class UserRead(BaseModel):
     rank: str | None = None
     zone_id: uuid_pkg.UUID | None = None
 
+    def is_admin(self) -> bool:
+        """Check if user is admin"""
+        return self.role == "admin"
+
+    def is_security(self) -> bool:
+        """Check if user is security personnel"""
+        return self.role == "security"
+
 
 class UserCreate(BaseModel):
     email: Annotated[EmailStr, Field(examples=["user.userson@example.com"])]

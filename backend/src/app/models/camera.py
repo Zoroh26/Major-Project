@@ -4,7 +4,7 @@ import uuid as uuid_pkg
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.db.database import Base
 
@@ -32,3 +32,6 @@ class Camera(Base):
     zone_id: Mapped[uuid_pkg.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("zone.uuid", ondelete="SET NULL"), nullable=True, index=True, default=None
     )
+
+    # Relationships
+    escalations = relationship("Escalation", back_populates="camera")

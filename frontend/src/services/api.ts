@@ -3,7 +3,7 @@ import axios from 'axios';
 import type { AuthResponse, RegisterData, User } from '../types/auth';
 import type { Zone, ZoneDetail, ZoneCreate, ZoneUpdate, PaginatedZonesResponse } from '../types/zones';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Setup axios interceptors
 axios.interceptors.request.use(
@@ -81,6 +81,8 @@ export interface Camera {
 	uuid: string;
 	name: string;
 	location: string;
+	zone_uuid?: string;
+	zone_id?: string;
 	rtsp_url: string;
 	stream_path: string;
 	is_active: boolean;

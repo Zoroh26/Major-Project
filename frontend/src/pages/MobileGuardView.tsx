@@ -1,16 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertOctagon, MapPin, Clock, ShieldCheck, ArrowRight, User, Wifi, WifiOff, Eye, Loader2, ShieldAlert } from 'lucide-react';
+import { AlertOctagon, MapPin, Clock, ShieldCheck, ArrowRight, User, Eye, Loader2, ShieldAlert, LogOut } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { useZoneStore } from '../store/zones';
+import { useEscalationStore } from '../store/escalations';
 import CameraFeed from '../components/CameraFeed';
 import { Button } from '../components/ui/Button';
 
 const MobileGuardView: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { activeZone, fetchZone, isLoading: isZoneLoading } = useZoneStore();
+  const {
+    escalations,
+    fetchEscalations,
+    assignedToMe,
+    fetchAssignedToMe,
+    actOnEscalation,
+    resolveEscalation,
+    markFalseAlarm,
+  } = useEscalationStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [actionNote, setActionNote] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [finalizedEscalationUuid, setFinalizedEscalationUuid] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'alerts' | 'status'>('alerts');
+
+  const switchTab = (tab: 'alerts' | 'status') => {
+    setActiveTab(tab);
+  };
 
   useEffect(() => {
     const initView = async () => {
@@ -26,6 +44,21 @@ const MobileGuardView: React.FC = () => {
 
     initView();
   }, [user?.zone_id, fetchZone]);
+
+  useEffect(() => {
+    if (user?.role !== 'security') return;
+
+    fetchAssignedToMe();
+    fetchEscalations();
+    const interval = setInterval(() => {
+      fetchAssignedToMe();
+      fetchEscalations();
+    }, 3000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [user?.role, fetchAssignedToMe, fetchEscalations]);
 
   const handleCameraClick = (cameraId: string) => {
     navigate(`/guard-view/camera/${cameraId}`);
@@ -72,6 +105,78 @@ const MobileGuardView: React.FC = () => {
   const officerRank = user?.rank || 'Security';
   const zoneName = activeZone?.name || 'Assigned Zone';
   const cameras = activeZone?.cameras || [];
+  const activeEscalation = assignedToMe.find(
+    (e) => e.status !== 'resolved' && e.status !== 'false_alarm'
+  );
+  const escalationList = [...escalations].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  const formatElapsed = (createdAt?: string) => {
+    if (!createdAt) return 'Unknown';
+    const diffMs = Date.now() - new Date(createdAt).getTime();
+    const mins = Math.max(1, Math.floor(diffMs / 60000));
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    return `${hours}h ${mins % 60}m ago`;
+  };
+
+  const handleRespond = async () => {
+    if (!activeEscalation) return;
+    setIsActionLoading(true);
+    try {
+      const note = actionNote.trim();
+      await actOnEscalation(activeEscalation.uuid, note);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleResolve = async () => {
+    if (!activeEscalation) return;
+    if (!isFinalizeStatusAllowed) return;
+    setIsActionLoading(true);
+    try {
+      await resolveEscalation(activeEscalation.uuid);
+      setFinalizedEscalationUuid(activeEscalation.uuid);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleFalseAlarm = async () => {
+    if (!activeEscalation) return;
+    if (!isFinalizeStatusAllowed) return;
+    setIsActionLoading(true);
+    try {
+      await markFalseAlarm(activeEscalation.uuid);
+      setFinalizedEscalationUuid(activeEscalation.uuid);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const escalationStatusLabel = activeEscalation ? activeEscalation.status.replace('_', ' ').toUpperCase() : 'NO ACTIVE INCIDENT';
+  const escalationPriorityLabel = activeEscalation ? activeEscalation.priority.toUpperCase() : 'N/A';
+  const escalationTitle = activeEscalation?.title || 'No Active Escalation';
+  const escalationId = activeEscalation ? `#${activeEscalation.uuid.slice(-8).toUpperCase()}` : '#------';
+  const escalationLocation = activeEscalation?.zone_uuid === activeZone?.uuid ? zoneName : zoneName;
+  const hasActiveEscalation = Boolean(activeEscalation);
+  const isFinalizeStatusAllowed =
+    activeEscalation?.status === 'pending' || activeEscalation?.status === 'in_progress';
+  const canFinalizeActiveEscalation =
+    Boolean(activeEscalation) &&
+    isFinalizeStatusAllowed &&
+    finalizedEscalationUuid !== activeEscalation?.uuid;
+
+  const incidentCardClass = hasActiveEscalation
+    ? 'bg-error/10 border-2 border-error/50 shadow-[0_8px_32px_rgba(186,26,26,0.15)]'
+    : 'bg-surface-container-low border border-outline-variant/20 shadow-sm';
+
+  const incidentHeaderClass = hasActiveEscalation
+    ? 'text-error'
+    : 'text-primary';
+
   return (
     <div className="min-h-screen bg-surface flex flex-col lg:flex-row overflow-hidden relative">
       
@@ -109,15 +214,40 @@ const MobileGuardView: React.FC = () => {
           </div>
         </div>
         <nav className="flex-1 p-6 space-y-4">
-          <button className="w-full flex items-center gap-3 text-left font-bold p-3 rounded-lg bg-surface-container/40 hover:bg-surface-container/60 transition-all text-primary">
+          <button
+            type="button"
+            onClick={() => switchTab('alerts')}
+            className={`w-full flex items-center gap-3 text-left font-bold p-3 rounded-lg transition-all ${
+              activeTab === 'alerts'
+                ? 'bg-surface-container/40 hover:bg-surface-container/60 text-primary'
+                : 'hover:bg-surface-container/40 text-on-primary-container/70'
+            }`}
+          >
             <AlertOctagon size={20} className="text-error" />
             <span>ALERTS</span>
           </button>
-          <button className="w-full flex items-center gap-3 text-left font-bold p-3 rounded-lg hover:bg-surface-container/40 transition-all text-on-primary-container/70">
+          <button
+            type="button"
+            onClick={() => switchTab('status')}
+            className={`w-full flex items-center gap-3 text-left font-bold p-3 rounded-lg transition-all ${
+              activeTab === 'status'
+                ? 'bg-surface-container/40 hover:bg-surface-container/60 text-primary'
+                : 'hover:bg-surface-container/40 text-on-primary-container/70'
+            }`}
+          >
             <ShieldCheck size={20} />
             <span>STATUS</span>
           </button>
         </nav>
+        <div className="p-6 border-t border-outline-variant/20">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 text-left font-bold p-3 rounded-lg hover:bg-surface-container/40 transition-all text-error hover:text-red-400"
+          >
+            <LogOut size={20} />
+            <span>LOGOUT</span>
+          </button>
+        </div>
       </aside>
 
       {/* Assignment Banner - Mobile Only */}
@@ -134,98 +264,183 @@ const MobileGuardView: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-4 lg:p-5 flex flex-col gap-4 mt-2 lg:mt-0 overflow-y-auto pb-24 lg:pb-4 max-w-5xl mx-auto w-full">
-        
-        {/* Urgent Alert Card */}
-        <div className="bg-error/10 border-2 border-error/50 rounded-xl p-5 lg:p-5 shadow-[0_8px_32px_rgba(186,26,26,0.15)] relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-error animate-pulse"></div>
+      <main className="flex-1 p-4 lg:p-6 flex flex-col gap-6 mt-2 lg:mt-0 overflow-y-auto pb-24 lg:pb-6 max-w-7xl mx-auto w-full">
+
+        {activeTab === 'alerts' && (
+        <>
+        {/* Active Incident Card */}
+        <div className={`${incidentCardClass} rounded-xl p-5 relative overflow-hidden`}>
+          {hasActiveEscalation && (
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-error via-red-600 to-error animate-pulse"></div>
+          )}
           
-          <div className="flex flex-col lg:flex-row lg:items-start gap-3 lg:gap-4 mb-4">
-            <div className="bg-error text-on-error p-2.5 rounded-lg shrink-0">
-              <AlertOctagon size={24} />
+          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
+            {/* Incident Header */}
+            <div className="lg:col-span-2">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="bg-error text-on-error p-2.5 rounded-lg shrink-0 shadow-lg">
+                  <AlertOctagon size={24} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className={`${incidentHeaderClass} font-extrabold text-lg uppercase tracking-widest`}>{escalationTitle}</h2>
+                    <span className={`${hasActiveEscalation ? 'bg-error text-on-error' : 'bg-surface-container text-primary'} text-xs font-bold px-2 py-0.5 rounded-full`}>{escalationPriorityLabel}</span>
+                  </div>
+                  <p className="text-xs text-primary/70 font-semibold">Incident {escalationId} • {escalationStatusLabel}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4 bg-surface-container-lowest/50 rounded-lg p-3 border border-error/10">
+                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                  <MapPin size={16} className={`${hasActiveEscalation ? 'text-error' : 'text-primary/60'} shrink-0`} /> 
+                  <span>{escalationLocation}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                  <Clock size={16} className="text-primary/60 shrink-0" /> 
+                  <span>Detected {formatElapsed(activeEscalation?.created_at)} • Last update {formatElapsed(activeEscalation?.updated_at || activeEscalation?.created_at)}</span>
+                </div>
+              </div>
+
+              <textarea
+                value={actionNote}
+                onChange={(e) => setActionNote(e.target.value)}
+                placeholder="Add response note for this escalation"
+                className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-primary mb-3"
+                rows={2}
+                disabled={!activeEscalation}
+              />
             </div>
-            <div className="flex-1">
-              <h2 className="text-error font-extrabold text-lg leading-tight uppercase tracking-widest">Congestion Alert</h2>
-              <p className="text-xs text-error/80 font-bold mt-0.5">PRIORITY: CRITICAL</p>
+
+            {/* Quick Response */}
+            <div className="lg:flex flex-col justify-between hidden">
+              <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-3">
+                <p className="text-xs text-primary/60 mb-2 font-semibold uppercase tracking-wide">Response Console</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-primary/70">Time to Response</span>
+                    <span className="font-bold text-primary">{activeEscalation ? formatElapsed(activeEscalation.created_at) : '--'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-primary/70">Assigned Unit</span>
+                    <span className="font-bold text-primary">{officerName}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 bg-surface-container-lowest/50 rounded-lg p-3 mb-4 border border-error/10">
-            <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-              <MapPin size={16} className="text-error shrink-0" /> 
-              <span>{zoneName} — Tactical Hub</span>
+          {/* Action Buttons */}
+          <div className="mt-4 rounded-lg border border-outline-variant/20 bg-surface-container-lowest p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary/60 mb-3">Resolve Escalation</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+              <button
+                onClick={handleRespond}
+                disabled={!activeEscalation || isActionLoading}
+                className="lg:col-span-2 bg-error hover:bg-red-800 disabled:bg-error/40 disabled:cursor-not-allowed text-on-error font-bold py-3 px-4 rounded-lg shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-base"
+              >
+                <ArrowRight size={18} /> {isActionLoading ? 'UPDATING...' : 'RESPOND'}
+              </button>
+              <button
+                onClick={handleResolve}
+                disabled={!canFinalizeActiveEscalation || isActionLoading}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all"
+              >
+                {isActionLoading ? 'PROCESSING...' : 'MARK AS RESOLVED'}
+              </button>
             </div>
-            <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-              <Clock size={16} className="text-primary/60 shrink-0" /> 
-              <span>Detected 2m 14s ago</span>
+
+            <div className="mt-3 flex-2 flex items-center justify-between gap-3">
+              <p className="text-xs text-primary/60">Use false alarm only when the alert is invalid.</p>
+              <button
+                onClick={handleFalseAlarm}
+                disabled={!canFinalizeActiveEscalation || isActionLoading}
+                className="text-sm text-error flex-1 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-colors"
+              >
+                MARK FALSE ALARM
+              </button>
             </div>
+
+            {hasActiveEscalation && !isFinalizeStatusAllowed && (
+              <p className="mt-2 text-xs text-primary/60">
+                Resolve and False Alarm are available only when status is pending or in progress.
+              </p>
+            )}
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-2">
-            <button className="flex-1 bg-error hover:bg-red-800 text-on-error font-bold py-3 px-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-base">
-              <ArrowRight size={18} /> EN ROUTE / RESPOND
-            </button>
-            <button className="flex-1 lg:flex-none lg:px-4 bg-transparent border-2 border-error/30 text-error hover:bg-error/5 font-bold py-3 text-sm rounded-xl transition-all">
-              Mark as False Alarm
-            </button>
-          </div>
+          {!activeEscalation && (
+            <div className="mt-3 text-xs font-medium text-primary/70">
+              No active escalations in your assignment queue.
+            </div>
+          )}
         </div>
 
-        {/* Assigned Cameras Grid */}
-        <div className="mt-6">
-          <h3 className="text-lg font-bold text-primary mb-4">Assigned Optical Hardwares</h3>
+        {/* Cameras Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-primary">Assigned Optical Hardwares</h3>
+              <p className="text-xs text-primary/60 mt-0.5">{cameras.length} devices • {cameras.filter((c) => c.is_active).length} online</p>
+            </div>
+          </div>
           {cameras.length === 0 ? (
             <div className="text-center py-12 border border-outline-variant/15 rounded-xl bg-surface-container-low/30 flex flex-col items-center gap-3">
               <ShieldCheck size={32} className="text-primary/20" />
               <p className="text-primary/60 font-medium">No optical hardware linked to this sector yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {cameras.map((camera) => {
                 const isOnline = camera.is_active;
                 const statusColor = isOnline ? 'text-green-500' : 'text-error';
                 const statusBg = isOnline ? 'bg-green-500/10' : 'bg-error/10';
                 const statusBorder = isOnline ? 'border-green-500/30' : 'border-error/30';
-                const statusLabel = isOnline ? 'Online' : 'Degraded';
+                const statusLabel = isOnline ? 'Online' : 'Offline';
 
                 return (
                   <div
                     key={camera.uuid}
-                    className="border border-outline-variant/15 rounded-xl bg-surface-container-low/30 overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer"
+                    className="border border-outline-variant/20 rounded-xl bg-surface-container-low/50 overflow-hidden hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group"
                     onClick={() => handleCameraClick(camera.uuid)}
                   >
                     {/* Camera Feed */}
-                    <div className="w-full h-40 bg-black relative overflow-hidden">
+                    <div className="w-full h-44 bg-black relative overflow-hidden group-hover:opacity-90 transition-opacity">
                       <CameraFeed
                         webrtcUrl={camera.webrtc_url ?? `http://localhost:8889/${camera.stream_path}`}
                         streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
                         cameraName={camera.name}
                       />
+                      {/* Status Badge Overlay */}
+                      <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold ${statusBg} border ${statusBorder} backdrop-blur-sm flex items-center gap-1.5`}>
+                        <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-error'}`}></span>
+                        <span className={statusColor}>{statusLabel}</span>
+                      </div>
                     </div>
 
-                    {/* Camera Info Footer */}
+                    {/* Camera Info */}
                     <div className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-primary text-sm lg:text-base">{camera.name}</h4>
-                          <p className="text-xs text-primary/60 mt-1">{camera.location}</p>
-                        </div>
-                        <div className={`px-2 py-1 rounded text-xs font-semibold ${statusBg} border ${statusBorder}`}>
-                          <div className="flex items-center gap-1.5">
-                            {isOnline ? (
-                              <Wifi size={14} className={statusColor} />
-                            ) : (
-                              <WifiOff size={14} className={statusColor} />
-                            )}
-                            <span className={statusColor}>{statusLabel}</span>
-                          </div>
-                        </div>
+                      <div className="mb-3">
+                        <h4 className="font-bold text-primary text-sm mb-1">{camera.name}</h4>
+                        <p className="text-xs text-primary/60 flex items-center gap-1">
+                          <MapPin size={12} /> {camera.location}
+                        </p>
                       </div>
 
-                      {/* Stream Path */}
+                      {/* Stream Info */}
                       <div className="mb-3 pb-3 border-b border-outline-variant/10">
-                        <p className="text-xs text-primary/60 mb-1">Stream:</p>
-                        <p className="text-xs font-mono text-primary/80 break-all">{camera.stream_path}</p>
+                        <p className="text-xs text-primary/60 mb-1 font-semibold">Stream Path</p>
+                        <p className="text-xs font-mono text-primary/80 break-all truncate">{camera.stream_path}</p>
+                      </div>
+
+                      {/* Quick Stats */}
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-surface-container rounded p-2 text-center">
+                          <p className="text-xs text-primary/60 font-semibold">FPS</p>
+                          <p className="text-sm font-bold text-primary">30</p>
+                        </div>
+                        <div className="bg-surface-container rounded p-2 text-center">
+                          <p className="text-xs text-primary/60 font-semibold">Uptime</p>
+                          <p className="text-sm font-bold text-primary">99%</p>
+                        </div>
                       </div>
 
                       {/* Action Button */}
@@ -234,9 +449,9 @@ const MobileGuardView: React.FC = () => {
                           e.stopPropagation();
                           handleCameraClick(camera.uuid);
                         }}
-                        className="w-full py-2 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-primary/30"
+                        className="w-full py-2.5 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-all flex items-center justify-center gap-2 border border-primary/30 group-hover:border-primary/60"
                       >
-                        <Eye size={16} /> View Stats
+                        <Eye size={16} /> View Live Feed
                       </button>
                     </div>
                   </div>
@@ -246,17 +461,80 @@ const MobileGuardView: React.FC = () => {
           )}
         </div>
 
+        </>
+        )}
+
+        {activeTab === 'status' && (
+          <section className="rounded-xl border border-outline-variant/20 bg-surface-container-low p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-primary">Escalation Status List</h3>
+              <span className="text-xs font-semibold text-primary/60">{escalationList.length} items</span>
+            </div>
+
+            {escalationList.length === 0 ? (
+              <div className="rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-4 text-sm text-primary/70">
+                No escalations available in your queue right now.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {escalationList.map((escalation) => (
+                  <div
+                    key={escalation.uuid}
+                    className="rounded-lg border border-outline-variant/20 bg-surface-container-lowest p-3"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-primary">{escalation.title}</p>
+                      <span className="rounded-full bg-surface-container px-2 py-0.5 text-[10px] font-bold uppercase text-primary/80">
+                        {escalation.priority}
+                      </span>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
+                        {escalation.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-primary/70">{escalation.description}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-primary/60">
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={12} /> {escalation.zone_name || zoneName}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock size={12} /> {formatElapsed(escalation.created_at)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="bg-surface-container border-t border-outline-variant/15 p-3 flex justify-around items-center fixed bottom-0 w-full pb-4 lg:hidden">
-        <button className="flex flex-col items-center gap-1 text-primary">
+      <nav className="bg-surface-container border-t border-outline-variant/15 p-3 flex justify-around items-center fixed bottom-0 w-full pb-4 lg:hidden z-50 pointer-events-auto">
+        <button
+          type="button"
+          onClick={() => switchTab('alerts')}
+          onTouchStart={() => switchTab('alerts')}
+          className={`flex flex-col items-center gap-1 ${activeTab === 'alerts' ? 'text-primary' : 'text-primary/40'}`}
+        >
           <AlertOctagon size={24} className="text-error drop-shadow-[0_0_8px_rgba(186,26,26,0.5)]" />
           <span className="text-[10px] font-bold">ALERTS</span>
         </button>
-        <button className="flex flex-col items-center gap-1 text-primary/40">
+        <button
+          type="button"
+          onClick={() => switchTab('status')}
+          onTouchStart={() => switchTab('status')}
+          className={`flex flex-col items-center gap-1 ${activeTab === 'status' ? 'text-primary' : 'text-primary/40'}`}
+        >
           <ShieldCheck size={24} />
           <span className="text-[10px] font-bold">STATUS</span>
+        </button>
+        <button
+          onClick={logout}
+          className="flex flex-col items-center gap-1 text-error hover:text-red-400 transition-colors"
+        >
+          <LogOut size={24} />
+          <span className="text-[10px] font-bold">LOGOUT</span>
         </button>
       </nav>
     </div>
