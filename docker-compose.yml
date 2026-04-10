@@ -6,6 +6,10 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     env_file:
       - ./backend/.env
+    environment:
+      - DISPLAY=host.docker.internal:0.0
+      - QT_X11_NO_MITSHM=1
+      - YOLO_CONFIG_DIR=/tmp/Ultralytics
     ports:
       - "8000:8000"
     depends_on:
@@ -16,6 +20,9 @@ services:
       - ./backend/src/migrations:/code/migrations
       - ./backend/src/alembic.ini:/code/alembic.ini
       - ./backend/src/scripts:/code/scripts
+      - ./backend/ml_preview.py:/code/ml_preview.py
+      - ./backend/run_rtsp_preview.py:/code/run_rtsp_preview.py
+      - ./backend/yolov8n.pt:/code/yolov8n.pt
 
   db:
     image: postgres:13
