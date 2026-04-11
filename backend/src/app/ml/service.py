@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 from datetime import UTC, datetime
 from time import perf_counter
 
@@ -17,6 +18,11 @@ from ..schemas.ml import (
 from .inference import YoloPersonDetector
 from .postprocess import build_heatmap
 from .source import OpenCVFrameSource
+
+# Single-threaded pool keeps YOLO inference sequential and off the event loop.
+_yolo_executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=1, thread_name_prefix="yolo"
+)
 
 
 class MLInferenceService:
@@ -110,6 +116,7 @@ class MLInferenceService:
             self._status.running = False
 
     async def _run_loop(self, config: MLStartRequest) -> None:
+        loop = asyncio.get_running_loop()
         source = OpenCVFrameSource(
             source_mode=config.source_mode,
             device_id=config.device_id,
@@ -117,11 +124,16 @@ class MLInferenceService:
         )
 
         try:
-            detector = YoloPersonDetector(
-                model_name=config.model_name,
-                confidence_threshold=config.confidence_threshold,
+            # Both the model load and the RTSP connect are blocking; run them
+            # in the executor so the event loop stays responsive.
+            detector = await loop.run_in_executor(
+                _yolo_executor,
+                lambda: YoloPersonDetector(
+                    model_name=config.model_name,
+                    confidence_threshold=config.confidence_threshold,
+                ),
             )
-            source.open()
+            await loop.run_in_executor(_yolo_executor, source.open)
 
             while self._stop_event is not None and not self._stop_event.is_set():
                 loop_started = perf_counter()
@@ -134,7 +146,10 @@ class MLInferenceService:
                 frame_height = int(frame.shape[0])
                 frame_width = int(frame.shape[1])
 
-                boxes, confidence_values = detector.detect_people(frame)
+                # Run blocking YOLO inference off the event loop.
+                boxes, confidence_values = await loop.run_in_executor(
+                    _yolo_executor, detector.detect_people, frame
+                )
                 person_count = len(boxes)
 
                 average_confidence = (

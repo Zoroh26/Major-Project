@@ -13,6 +13,7 @@ import SecurityRegistration from "./pages/SecurityRegistration";
 import MobileGuardView from "./pages/MobileGuardView";
 import CameraStats from "./pages/CameraStats";
 import EscalationsPage from "./pages/Escalations";
+import ZoneCameraMonitor from "./pages/ZoneCameraMonitor";
 import AppLayout from "./components/AppLayout";
 import { useAuthStore } from "./store/auth";
 
@@ -64,6 +65,7 @@ const App = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/escalations" element={<EscalationsPage />} />
           <Route path="/zones" element={<ZoneMapper />} />
+          <Route path="/zones/camera/:cameraId" element={<ZoneCameraMonitor />} />
           <Route path="/personnel" element={<PersonnelManager />} />
           <Route path="/personnel/new" element={<SecurityRegistration />} />
         </Route>

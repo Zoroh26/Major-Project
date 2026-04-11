@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Video, Settings, Trash2, Loader, Calendar, Edit3, AlignLeft } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -9,6 +10,7 @@ import { useZoneStore } from '../store/zones';
 import CameraFeed from '../components/CameraFeed';
 
 const ZoneMapper: React.FC = () => {
+  const navigate = useNavigate();
   const { zones, activeZone, fetchZones, fetchZone, assignCamera, unassignCamera, isLoading } = useZoneStore();
   const [activeZoneId, setActiveZoneId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -147,7 +149,13 @@ const ZoneMapper: React.FC = () => {
                       cameraName={cam.name}
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                      <Button variant="secondary" className="text-xs">Calibrate AI Mapping</Button>
+                      <Button
+                        variant="secondary"
+                        className="text-xs"
+                        onClick={() => navigate(`/zones/camera/${cam.uuid}`)}
+                      >
+                        Open Live Monitor
+                      </Button>
                     </div>
                   </div>
                   <div className="flex justify-between items-center text-xs mt-1">
