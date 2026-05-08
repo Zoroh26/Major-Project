@@ -126,9 +126,7 @@ const Login: React.FC = () => {
             )}
           </div>
 
-          <div className="text-right mt-1">
-            <a href="#" className="text-xs text-primary/70 hover:text-primary transition font-medium">Forgot Access Code?</a>
-          </div>
+          
 
           <Button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 mt-4 py-2.5">
             {loading ? (
@@ -138,18 +136,6 @@ const Login: React.FC = () => {
             )}
           </Button>
         </form>
-
-        <div className="mt-8 pt-6 border-t border-outline-variant/20">
-          <div className="grid grid-cols-2 gap-y-2 text-[10px] text-primary/50 font-mono tracking-wider">
-            <p>LAT: 34.0522° N</p>
-            <p className="text-right">LONG: 118.2437° W</p>
-            <p>VER: 4.92.0-S</p>
-            <p className="text-right">SEC: LEVEL 4</p>
-            <p className="col-span-2 text-center mt-2 border border-primary/10 py-1 bg-surface-container-low rounded uppercase text-[9px] text-error/80 font-bold">
-              Authorized Personnel Only — Access Monitored
-            </p>
-          </div>
-        </div>
       </Card>
     </div>
   );

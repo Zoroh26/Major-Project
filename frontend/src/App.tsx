@@ -6,7 +6,6 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import SecurityDashboard from "./pages/SecurityDashboard";
-import Cameras from "./pages/Cameras";
 import ZoneMapper from "./pages/ZoneMapper";
 import PersonnelManager from "./pages/PersonnelManager";
 import SecurityRegistration from "./pages/SecurityRegistration";
@@ -19,7 +18,7 @@ import { useAuthStore } from "./store/auth";
 
 const App = () => {
   useEffect(() => {
-    useAuthStore.getState().checkSession();
+    void useAuthStore.getState().checkSession();
   }, []);
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
