@@ -64,6 +64,27 @@ services:
       - MEDIAMTX_API_ADDRESS=:9997
       - MEDIAMTX_API_UDP=no
 
+  crowdvision:
+    build:
+      context: ./crowdvision_api/crowdvision_api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8002:8000"   # host:8002 → container:8000 (avoids 8001/udp mediamtx conflict)
+    environment:
+      - MPLBACKEND=Agg
+      - CUDA_VISIBLE_DEVICES=
+      - PYTHONUNBUFFERED=1
+    # Uncomment to override the default 6-second capture interval or swap GPU:
+    # environment:
+    #   - DEVICE=cuda
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s   # model loading takes ~30-60s on first start
+
   # frontend:
   #   build:
   #     context: ./frontend
