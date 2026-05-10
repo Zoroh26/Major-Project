@@ -144,8 +144,8 @@ const ZoneMapper: React.FC = () => {
                   </div>
                   <div className="aspect-video bg-[#001918] rounded flex items-center justify-center relative overflow-hidden group">
                     <CameraFeed
-                      webrtcUrl={cam.webrtc_url ?? `http://localhost:8889/${cam.stream_path}`}
-                      streamUrl={cam.hls_url ?? `http://localhost:8888/${cam.stream_path}/index.m3u8`}
+                      webrtcUrl={cam.webrtc_url ?? `http://${window.location.hostname}:8889/${cam.stream_path}`}
+                      streamUrl={cam.hls_url ?? `http://${window.location.hostname}:8888/${cam.stream_path}/index.m3u8`}
                       cameraName={cam.name}
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">

@@ -37,21 +37,21 @@ const RISK_DOT: Record<RiskLevel, string> = {
   critical: 'bg-red-500',
 };
 
-const CONGESTION_COLOR: Record<CongestionLevel, string> = {
+const _CONGESTION_COLOR: Record<CongestionLevel, string> = {
   free_flow: 'text-green-600',
   moderate: 'text-yellow-600',
   heavy: 'text-orange-500',
   critical: 'text-red-500',
 };
 
-const CONGESTION_BAR: Record<CongestionLevel, string> = {
+const _CONGESTION_BAR: Record<CongestionLevel, string> = {
   free_flow: 'bg-green-500',
   moderate: 'bg-yellow-500',
   heavy: 'bg-orange-500',
   critical: 'bg-red-500',
 };
 
-const CONGESTION_WIDTH: Record<CongestionLevel, string> = {
+const _CONGESTION_WIDTH: Record<CongestionLevel, string> = {
   free_flow: 'w-[20%]',
   moderate: 'w-[50%]',
   heavy: 'w-[75%]',
@@ -93,8 +93,8 @@ const CrowdVisionPanel = ({
 }: CrowdVisionPanelProps) => {
   const [density, setDensity] = useState<DensityResult | null>(null);
   const [anomaly, setAnomaly] = useState<AnomalyResult | null>(null);
-  const [forecast, setForecast] = useState<ForecastResult | null>(null);
-  const [forecastHorizon, setForecastHorizon] = useState<15 | 30 | 60>(initialHorizon);
+  const [_forecast, setForecast] = useState<ForecastResult | null>(null);
+  const [forecastHorizon, _setForecastHorizon] = useState<15 | 30 | 60>(initialHorizon);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [cvError, setCvError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);

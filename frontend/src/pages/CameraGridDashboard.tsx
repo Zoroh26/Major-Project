@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import CameraFeed from '../components/CameraFeed';
-import CrowdDashboardWidget from '../components/CrowdDashboardWidget';
+// CrowdDashboardWidget import removed — widget section is commented out below
 import type { Camera } from '../services/api';
 import { getZone } from '../services/api';
 import { useCameraStore } from '../store/cameras';
@@ -32,10 +32,10 @@ const CameraGridDashboard = () => {
   const canCreateEscalation = user?.role === 'admin';
 
   // ── ML state ────────────────────────────────────────────────────────────────
-  const [mlResults, setMlResults] = useState<CameraMLResult[]>([]);
-  const [mlLoading, setMlLoading] = useState(false);
-  const [mlError, setMlError] = useState<string | null>(null);
-  const [mlLastUpdated, setMlLastUpdated] = useState<Date | null>(null);
+  const [_mlResults, setMlResults] = useState<CameraMLResult[]>([]);
+  const [_mlLoading, setMlLoading] = useState(false);
+  const [_mlError, setMlError] = useState<string | null>(null);
+  const [_mlLastUpdated, setMlLastUpdated] = useState<Date | null>(null);
 
 
   // ── Zone helpers ─────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ const CameraGridDashboard = () => {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   // Camera names for skeleton placeholders in the widget
-  const gridCameraNames = cameras.slice(0, MAX_CAMERAS).map((c) => c.name);
+  const _gridCameraNames = cameras.slice(0, MAX_CAMERAS).map((c) => c.name);
 
   return (
     <div className="h-[85vh] bg-background p-6 overflow-hidden flex flex-col gap-4">
@@ -199,8 +199,8 @@ const CameraGridDashboard = () => {
                 <div key={camera.uuid} className="bg-card rounded-lg border-2 border-primary overflow-hidden flex flex-col min-h-0">
                   <div className="flex-1 min-h-0">
                     <CameraFeed
-                      webrtcUrl={camera.webrtc_url ?? `http://localhost:8889/${camera.stream_path}`}
-                      streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                      webrtcUrl={camera.webrtc_url ?? `http://${window.location.hostname}:8889/${camera.stream_path}`}
+                      streamUrl={camera.hls_url ?? `http://${window.location.hostname}:8888/${camera.stream_path}/index.m3u8`}
                       cameraName={camera.name}
                     />
                   </div>

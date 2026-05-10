@@ -40,7 +40,7 @@ const priorityTextColors = {
 };
 
 export const EscalationsList: React.FC<EscalationsListProps> = ({
-  currentUserRole,
+  currentUserRole: _currentUserRole,
   onSelectEscalation,
 }) => {
   const { escalations, fetchEscalations, stats, isLoading } =

@@ -405,8 +405,8 @@ const MobileGuardView: React.FC = () => {
                     {/* Camera Feed */}
                     <div className="w-full h-44 bg-black relative overflow-hidden group-hover:opacity-90 transition-opacity">
                       <CameraFeed
-                        webrtcUrl={camera.webrtc_url ?? `http://localhost:8889/${camera.stream_path}`}
-                        streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                        webrtcUrl={camera.webrtc_url ?? `http://${window.location.hostname}:8889/${camera.stream_path}`}
+                        streamUrl={camera.hls_url ?? `http://${window.location.hostname}:8888/${camera.stream_path}/index.m3u8`}
                         cameraName={camera.name}
                       />
                       {/* Status Badge Overlay */}

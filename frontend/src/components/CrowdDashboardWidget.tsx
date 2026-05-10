@@ -193,7 +193,7 @@ const CrowdDashboardWidget = ({
 
       {/* ── Camera result grid ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {cameraNames.map((name, i) => {
+        {cameraNames.map((name, _i) => {
           const result = results.find((r) => r.cameraName === name);
           if (result) return <CameraCard key={result.cameraUuid} result={result} />;
           // Show skeleton while loading or API is offline

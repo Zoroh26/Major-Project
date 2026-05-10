@@ -88,8 +88,8 @@ const CameraStats: React.FC = () => {
           <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/15 shadow-md">
             <div className="aspect-video bg-black flex items-center justify-center">
               <CameraFeed
-                webrtcUrl={camera.webrtc_url ?? `http://localhost:8889/${camera.stream_path}`}
-                streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                webrtcUrl={camera.webrtc_url ?? `http://${window.location.hostname}:8889/${camera.stream_path}`}
+                streamUrl={camera.hls_url ?? `http://${window.location.hostname}:8888/${camera.stream_path}/index.m3u8`}
                 cameraName={camera.name}
               />
             </div>
@@ -182,13 +182,13 @@ const CameraStats: React.FC = () => {
               <div>
                 <span className="text-xs text-on-surface/60 uppercase font-bold">HLS Stream</span>
                 <p className="text-xs font-mono text-primary/70 break-all mt-1">
-                  {camera.hls_url || `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                  {camera.hls_url || `http://${window.location.hostname}:8888/${camera.stream_path}/index.m3u8`}
                 </p>
               </div>
               <div>
                 <span className="text-xs text-on-surface/60 uppercase font-bold">WebRTC Stream</span>
                 <p className="text-xs font-mono text-primary/70 break-all mt-1">
-                  {camera.webrtc_url || `http://localhost:8889/${camera.stream_path}`}
+                  {camera.webrtc_url || `http://${window.location.hostname}:8889/${camera.stream_path}`}
                 </p>
               </div>
               <div >

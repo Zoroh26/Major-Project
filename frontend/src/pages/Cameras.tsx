@@ -79,8 +79,8 @@ const Cameras = () => {
                 {/* Camera Feed */}
                 <div className="h-48 mb-4 rounded overflow-hidden">
                   <CameraFeed
-                    webrtcUrl={camera.webrtc_url ?? `http://localhost:8889/${camera.stream_path}`}
-                    streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                    webrtcUrl={camera.webrtc_url ?? `http://${window.location.hostname}:8889/${camera.stream_path}`}
+                    streamUrl={camera.hls_url ?? `http://${window.location.hostname}:8888/${camera.stream_path}/index.m3u8`}
                     cameraName={camera.name}
                   />
                 </div>

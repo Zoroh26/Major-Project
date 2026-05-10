@@ -52,7 +52,7 @@ const CameraFeed = forwardRef<HTMLVideoElement, CameraFeedProps>(
           });
         });
 
-        hls.on(HLS.Events.ERROR, (event, data) => {
+        hls.on(HLS.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             setIsPlaying(false);
             const errorMsg = data.details || data.type || 'Unknown error';

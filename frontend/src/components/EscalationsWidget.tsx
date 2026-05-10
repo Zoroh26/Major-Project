@@ -29,7 +29,7 @@ export const EscalationsWidget: React.FC<EscalationsWidgetProps> = ({
   onCreateEscalation,
   currentUserRole,
 }) => {
-  const { escalations, stats, fetchEscalations, assignedToMe, fetchAssignedToMe } =
+  const { escalations, stats, fetchEscalations, assignedToMe: _assignedToMe, fetchAssignedToMe } =
     useEscalationStore();
 
   const [displayEscalations, setDisplayEscalations] = useState<typeof escalations>(
@@ -54,7 +54,7 @@ export const EscalationsWidget: React.FC<EscalationsWidgetProps> = ({
   }, [escalations]);
 
   const criticalCount = escalations.filter((e) => e.priority === "critical").length;
-  const highCount = escalations.filter((e) => e.priority === "high").length;
+  const _highCount = escalations.filter((e) => e.priority === "high").length;
   const activeCount = stats?.pending || 0;
 
   return (

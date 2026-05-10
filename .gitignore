@@ -1,10 +1,17 @@
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -17,11 +24,41 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# Virtual Environment
+.env/
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Frontend / Node
+node_modules/
+dist/
+.next/
+out/
+build/
+.nuxt/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Databases
+*.db
+*.sqlite3
+sql_app.db
 
 # ML Models & Checkpoints
+checkpoints/
+runs/
 *.pt
 *.pth
 *.weights
@@ -29,27 +66,17 @@ wheels/
 *.onnx
 *.pb
 
-# Environments
-.env
-.venv
-venv/
-ENV/
-
-# IDEs
-.vscode/
-.idea/
-
-# OS
+# OS Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Frontend
-node_modules/
-dist/
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo

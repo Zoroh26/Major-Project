@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Camera, MapPin, Timer } from 'lucide-react';
 import { toast } from 'react-toastify';
 import CameraFeed from '../components/CameraFeed';
-import HeatMap from '../components/HeatMap';
+// HeatMap import removed — YOLO heatmap section is commented out
 import CrowdVisionPanel from '../components/CrowdVisionPanel';
 import {
   createMlDevStream,
@@ -317,8 +317,8 @@ const ZoneCameraMonitor = () => {
                 <h2 className="text-sm font-bold uppercase tracking-wide text-primary/70 mb-3">Live feed</h2>
                 <div className="h-[240px] rounded-lg overflow-hidden bg-black border border-border">
                   <CameraFeed
-                    webrtcUrl={camera.webrtc_url ?? `http://localhost:8889/${camera.stream_path}`}
-                    streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                    webrtcUrl={camera.webrtc_url ?? `http://${window.location.hostname}:8889/${camera.stream_path}`}
+                    streamUrl={camera.hls_url ?? `http://${window.location.hostname}:8888/${camera.stream_path}/index.m3u8`}
                     cameraName={camera.name}
                   />
                 </div>
@@ -337,8 +337,8 @@ const ZoneCameraMonitor = () => {
                 <div className="relative h-[58vh] min-h-[420px] max-h-[680px] rounded-lg overflow-hidden bg-black border border-border mb-3">
                   {/* Display feed — WebRTC for lowest latency */}
                   <CameraFeed
-                    webrtcUrl={camera.webrtc_url ?? `http://localhost:8889/${camera.stream_path}`}
-                    streamUrl={camera.hls_url ?? `http://localhost:8888/${camera.stream_path}/index.m3u8`}
+                    webrtcUrl={camera.webrtc_url ?? `http://${window.location.hostname}:8889/${camera.stream_path}`}
+                    streamUrl={camera.hls_url ?? `http://${window.location.hostname}:8888/${camera.stream_path}/index.m3u8`}
                     cameraName={camera.name}
                   />
 

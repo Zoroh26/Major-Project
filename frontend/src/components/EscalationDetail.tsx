@@ -108,7 +108,7 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
     }
   };
 
-  const handleResolve = async () => {
+  const _handleResolve = async () => {
     if (!isStatusActionable) return;
     setIsSubmitting(true);
     setError("");
@@ -130,7 +130,7 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
     }
   };
 
-  const handleFalseAlarm = async () => {
+  const _handleFalseAlarm = async () => {
     if (!isStatusActionable) return;
     if (!window.confirm("Mark this as a false alarm?")) return;
 
@@ -159,7 +159,7 @@ export const EscalationDetail: React.FC<EscalationDetailProps> = ({
   const canResolve = isAssignedToMe || currentUserRole === "admin";
   const effectiveStatus = statusOverride ?? escalation.status;
   const isStatusActionable = effectiveStatus === "pending" || effectiveStatus === "in_progress";
-  const canFinalize = canResolve && isStatusActionable;
+  const _canFinalize = canResolve && isStatusActionable;
   const zoneDisplay = escalation.zone_name || escalation.zone_uuid || "Unknown";
   const cameraDisplay = escalation.camera_name || escalation.camera_uuid || "Unknown";
   const assignedToDisplay = escalation.assigned_to_name || escalation.assigned_to_uuid || "Unassigned";

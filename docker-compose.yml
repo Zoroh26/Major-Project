@@ -9,7 +9,6 @@ services:
     environment:
       - DISPLAY=host.docker.internal:0.0
       - QT_X11_NO_MITSHM=1
-      - YOLO_CONFIG_DIR=/tmp/Ultralytics
     ports:
       - "8000:8000"
     depends_on:
@@ -20,9 +19,6 @@ services:
       - ./backend/src/migrations:/code/migrations
       - ./backend/src/alembic.ini:/code/alembic.ini
       - ./backend/src/scripts:/code/scripts
-      - ./backend/ml_preview.py:/code/ml_preview.py
-      - ./backend/run_rtsp_preview.py:/code/run_rtsp_preview.py
-      - ./backend/yolov8n.pt:/code/yolov8n.pt
 
   db:
     image: postgres:13
@@ -64,35 +60,17 @@ services:
       - MEDIAMTX_API_ADDRESS=:9997
       - MEDIAMTX_API_UDP=no
 
-  crowdvision:
+  frontend:
     build:
-      context: ./crowdvision_api/crowdvision_api
+      context: ./frontend
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "8002:8000"   # host:8002 → container:8000 (avoids 8001/udp mediamtx conflict)
-    environment:
-      - MPLBACKEND=Agg
-      - CUDA_VISIBLE_DEVICES=
-      - PYTHONUNBUFFERED=1
-    # Uncomment to override the default 6-second capture interval or swap GPU:
-    # environment:
-    #   - DEVICE=cuda
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s   # model loading takes ~30-60s on first start
-
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     - web
+      - "3000:80"
+    depends_on:
+      - web
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
 
 volumes:
   postgres-data:

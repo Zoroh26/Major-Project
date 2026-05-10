@@ -103,7 +103,7 @@ const Signup: React.FC = () => {
       }
     : null;
 
-  const isPasswordValid = passwordStrength &&
+  const _isPasswordValid = passwordStrength &&
     passwordStrength.has8Chars &&
     passwordStrength.hasUppercase &&
     passwordStrength.hasNumber;
