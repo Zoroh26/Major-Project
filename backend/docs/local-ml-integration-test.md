@@ -5,6 +5,53 @@ This runbook is for testing the integrated pipeline in `backend/src/app/ml` with
 This is **not** the standalone `ml_preview.py` flow.
 for ml_preview run 'py -m pip install opencv-python numpy ultralytics'
 
+Standalone RTSP preview command:
+
+```powershell
+py ml_preview.py --rtsp-url "rtsp://localhost:8554/your_path" --conf 0.25
+```
+
+Interactive RTSP preview launcher (asks for URL):
+
+```powershell
+py run_rtsp_preview.py
+```
+
+Interactive RTSP launcher from Docker bash:
+
+```powershell
+cd C:\Users\rohit\Personal\projects\Major-Project
+docker compose up -d web
+docker compose exec web bash
+```
+
+Inside the container shell:
+
+```bash
+python /code/run_rtsp_preview.py
+```
+
+It will prompt for the RTSP URL in container terminal.
+
+Windows GUI note for Docker:
+
+To show `cv2.imshow` windows from Linux container, run an X server on Windows first (for example VcXsrv/XLaunch):
+
+1. Start XLaunch with Display number `0`.
+2. Select multiple windows mode.
+3. Disable access control.
+4. Keep XLaunch running, then run the Docker commands above.
+
+If X server is not running, container inference can still run but GUI windows will fail to open.
+
+Docker image build and startup for backend stack:
+
+```powershell
+cd C:\Users\rohit\Personal\projects\Major-Project
+docker compose build web
+docker compose up -d db mediamtx web
+```
+
 ## What This Test Covers
 
 1. Backend ML service starts from `/api/v1/ml/dev/start`.

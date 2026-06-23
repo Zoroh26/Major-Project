@@ -7,12 +7,27 @@ import numpy as np
 from ultralytics import YOLO
 
 
+GUI_ERROR_HINT = (
+    "OpenCV GUI functions are unavailable in this environment. "
+    "Install a GUI-enabled OpenCV build (opencv-python) and remove "
+    "opencv-python-headless if it is installed."
+)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Standalone webcam YOLO preview with heatmap and live specs"
+        description="Standalone YOLO preview with heatmap and live specs"
     )
-    parser.add_argument("--camera", type=int, default=0, help="Webcam index (default: 0)")
-    parser.add_argument("--model", type=str, default="yolov8n.pt", help="YOLO model file")
+    parser.add_argument("--camera", type=int, default=0,
+                        help="Webcam index (default: 0)")
+    parser.add_argument(
+        "--rtsp-url",
+        type=str,
+        default="",
+        help="RTSP stream URL (if provided, this is used instead of --camera)",
+    )
+    parser.add_argument("--model", type=str,
+                        default="yolov8n.pt", help="YOLO model file")
     parser.add_argument(
         "--conf",
         type=float,
@@ -95,14 +110,23 @@ def main() -> None:
     print(f"Loading model: {args.model}")
     model = YOLO(args.model)
 
-    cap = cv2.VideoCapture(args.camera)
+    source = args.rtsp_url.strip() if args.rtsp_url else args.camera
+    cap = cv2.VideoCapture(source)
     if not cap.isOpened():
+        if isinstance(source, str):
+            raise RuntimeError(
+                "Unable to open RTSP stream. Check --rtsp-url, network reachability, and credentials."
+            )
         raise RuntimeError(f"Unable to open webcam index {args.camera}")
+
+    source_label = f"rtsp:{args.rtsp_url}" if isinstance(
+        source, str) else f"camera:{args.camera}"
 
     heatmap_acc: np.ndarray | None = None
     heatmap_enabled = True
     fps_ema = 0.0
 
+    print(f"Source: {source_label}")
     print("Preview started. Press q to quit, h to toggle heatmap, r to reset heatmap.")
 
     try:
@@ -111,6 +135,11 @@ def main() -> None:
 
             ok, frame = cap.read()
             if not ok or frame is None:
+                if isinstance(source, str):
+                    # RTSP can drop intermittently; reopen stream and continue.
+                    cap.release()
+                    cap = cv2.VideoCapture(source)
+                    time.sleep(0.05)
                 continue
 
             h, w = frame.shape[:2]
@@ -145,7 +174,8 @@ def main() -> None:
                     cv2.circle(heatmap_acc, (cx, cy), radius, 1.0, -1)
 
             heatmap_acc *= args.heatmap_decay
-            heatmap_blur = cv2.GaussianBlur(heatmap_acc, (0, 0), sigmaX=15, sigmaY=15)
+            heatmap_blur = cv2.GaussianBlur(
+                heatmap_acc, (0, 0), sigmaX=15, sigmaY=15)
 
             peak = float(np.max(heatmap_blur))
             normalized = heatmap_blur / peak if peak > 1e-6 else heatmap_blur
@@ -156,14 +186,16 @@ def main() -> None:
 
             annotated = result.plot()
             if heatmap_enabled:
-                annotated = cv2.addWeighted(annotated, 1.0, heatmap_img, args.overlay_alpha, 0.0)
+                annotated = cv2.addWeighted(
+                    annotated, 1.0, heatmap_img, args.overlay_alpha, 0.0)
 
             avg_conf = float(np.mean(confs)) if confs else 0.0
             max_conf = float(np.max(confs)) if confs else 0.0
 
             elapsed = time.perf_counter() - loop_start
             inst_fps = 1.0 / elapsed if elapsed > 0 else 0.0
-            fps_ema = inst_fps if fps_ema == 0.0 else ((0.9 * fps_ema) + (0.1 * inst_fps))
+            fps_ema = inst_fps if fps_ema == 0.0 else (
+                (0.9 * fps_ema) + (0.1 * inst_fps))
 
             draw_specs_panel(
                 frame=annotated,
@@ -177,10 +209,19 @@ def main() -> None:
                 heatmap_enabled=heatmap_enabled,
             )
 
-            cv2.imshow("YOLO Webcam Preview + Heatmap", annotated)
-            cv2.imshow("Heatmap Only", heatmap_img)
+            try:
+                cv2.imshow("YOLO Webcam Preview + Heatmap", annotated)
+                cv2.imshow("Heatmap Only", heatmap_img)
+            except cv2.error as err:
+                print(f"\n{GUI_ERROR_HINT}\nOpenCV error: {err}")
+                break
 
-            key = cv2.waitKey(1) & 0xFF
+            try:
+                key = cv2.waitKey(1) & 0xFF
+            except cv2.error as err:
+                print(f"\n{GUI_ERROR_HINT}\nOpenCV error: {err}")
+                break
+
             if key == ord("q"):
                 break
             if key == ord("h"):
@@ -190,7 +231,11 @@ def main() -> None:
 
     finally:
         cap.release()
-        cv2.destroyAllWindows()
+        try:
+            cv2.destroyAllWindows()
+        except cv2.error:
+            # In headless OpenCV builds, window cleanup APIs are unavailable.
+            pass
 
 
 if __name__ == "__main__":

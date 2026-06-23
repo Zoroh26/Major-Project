@@ -6,12 +6,17 @@ const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/escalations': 'Escalations',
   '/cameras': 'Cameras',
+  '/zones': 'Zone Mapping',
+  '/personnel': 'Personnel',
+  '/personnel/new': 'Register Personnel',
 };
 
 const Topbar = () => {
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
-  const title = pageTitles[location.pathname] ?? 'App';
+  const title = location.pathname.startsWith('/zones/camera/')
+    ? 'Camera Monitor'
+    : (pageTitles[location.pathname] ?? 'App');
 
   return (
     <header className="h-16 shrink-0 bg-surface-container-low border-b border-outline-variant/15 flex items-center justify-between px-6">
