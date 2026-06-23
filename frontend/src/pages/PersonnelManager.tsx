@@ -35,9 +35,6 @@ const PersonnelManager: React.FC = () => {
           <p className="text-sm text-primary/60">{onDutyCount} Active Staff Members Across {zones.length} Zones</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="secondary" className="text-sm font-semibold">
-            Export Report
-          </Button>
           <Button onClick={() => navigate('/personnel/new')} className="text-sm font-semibold flex items-center gap-2">
             <Plus size={16} /> Onboard New
           </Button>
@@ -147,7 +144,7 @@ const PersonnelManager: React.FC = () => {
                         {status === 'Active' ? 'Patrolling assigned zone' : 'Awaiting assignment'}
                       </td>
                       <td className="px-6 py-3 text-right">
-                        <button 
+                        <button
                           className="text-primary/40 hover:text-primary transition-colors p-1"
                           onClick={() => {
                             setEditingGuard(guard);
@@ -227,11 +224,11 @@ const PersonnelManager: React.FC = () => {
         </div>
       </div>
 
-      <EditPersonnelModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        guard={editingGuard} 
-        onSuccess={() => fetchGuards()} 
+      <EditPersonnelModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        guard={editingGuard}
+        onSuccess={() => fetchGuards()}
       />
     </div>
   );

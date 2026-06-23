@@ -17,7 +17,7 @@ type AuthState = {
 	login: (credentials: { email: string; password: string }) => Promise<void>;
 	signup: (data: RegisterData) => Promise<void>;
 	logout: () => void;
-	checkSession: () => void;
+	checkSession: () => Promise<void>;
 	setLoggedOut: () => void;
 };
 
@@ -103,30 +103,34 @@ export const useAuthStore = create<AuthState>((set) => ({
 		set({ user: null, isLoggedIn: false, loading: false, error: 'Session expired. Please login again.' });
 	},
 
-	checkSession: () => {
+	checkSession: async () => {
 		set({ loading: true, error: null });
 		try {
 			let token = '';
-			let sessionUser = null;
+			let sessionUser: Partial<User> | null = null;
 			
 			if (typeof window !== 'undefined') {
 				token = localStorage.getItem('authToken') || '';
 				const userRaw = localStorage.getItem('currentUser');
 				if (userRaw) {
-					sessionUser = JSON.parse(userRaw);
+					sessionUser = JSON.parse(userRaw) as Partial<User>;
 				}
 			}
-			if (!sessionUser || !token) throw new Error('No valid session found');
-			
+			if (!token) throw new Error('No valid session found');
+
+			// Validate token on app boot to prevent showing protected pages with stale local data.
+			const userRes = await getCurrentUser(token);
+			const userData = userRes.data;
+
 			const reqUserObj: User = {
-				id: sessionUser.id,
-				uuid: sessionUser.uuid || sessionUser.id,
-				email: sessionUser.email,
-				name: sessionUser.name,
-				role: normalizeRole(sessionUser.role),
-				rank: sessionUser.rank,
+				id: userData.uuid || sessionUser?.id || '',
+				uuid: userData.uuid || sessionUser?.uuid || sessionUser?.id || '',
+				email: userData.email || sessionUser?.email || '',
+				name: userData.name || sessionUser?.name || userData.email || '',
+				role: normalizeRole(userData.role || sessionUser?.role),
+				rank: userData.rank || sessionUser?.rank || null,
 				token,
-				zone_id: sessionUser.zone_id
+				zone_id: userData.zone_id || sessionUser?.zone_id || null,
 			};
 
 			set({
@@ -134,6 +138,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 				isLoggedIn: true,
 				loading: false,
 			});
+
+			if (typeof window !== 'undefined') {
+				localStorage.setItem('currentUser', JSON.stringify(reqUserObj));
+			}
 		} catch (error) {
 			// Clear invalid session data
 			if (typeof window !== 'undefined') {

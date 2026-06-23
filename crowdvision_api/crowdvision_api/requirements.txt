@@ -1,0 +1,19 @@
+# CrowdVision Demo API Dependencies
+
+# Web framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-multipart>=0.0.6
+
+# ML stack
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0
+scipy>=1.10.0
+Pillow>=9.5.0
+matplotlib>=3.7.0
+scikit-learn>=1.2.0
+
+# Data loading (for forecasting)
+h5py>=3.8.0
+pandas>=2.0.0

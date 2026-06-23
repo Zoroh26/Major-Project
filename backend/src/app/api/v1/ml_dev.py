@@ -1,12 +1,48 @@
 import asyncio
+import concurrent.futures
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, status
+import cv2
+import numpy as np
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+from fastapi.responses import Response
 
 from ...core.config import EnvironmentOption, settings
 from ...ml.service import ml_inference_service
 from ...schemas.ml import MLLatestResponse, MLSessionState, MLStartRequest
 
 router = APIRouter(tags=["ml-dev"], prefix="/dev")
+
+# Thread pool for blocking cv2 snapshot calls
+_snapshot_executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=2, thread_name_prefix="cv2-snapshot"
+)
+
+
+def _grab_jpeg(stream_url: str, quality: int = 80) -> bytes:
+    """
+    Open the RTSP stream, read a single frame, encode as JPEG, and close.
+    Raises RuntimeError if the stream can't be opened or no frame arrives.
+    """
+    cap = cv2.VideoCapture(stream_url)
+    if not cap.isOpened():
+        raise RuntimeError(f"Cannot open stream: {stream_url}")
+    try:
+        # Try a few reads — first frames after connect may be empty
+        frame: np.ndarray | None = None
+        for _ in range(10):
+            ok, f = cap.read()
+            if ok and f is not None:
+                frame = f
+                break
+        if frame is None:
+            raise RuntimeError("Stream opened but returned no frames")
+        ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
+        if not ok:
+            raise RuntimeError("JPEG encoding failed")
+        return buf.tobytes()
+    finally:
+        cap.release()
+
 
 
 def _guard_local_environment() -> None:
@@ -69,3 +105,31 @@ async def ml_stream(websocket: WebSocket) -> None:
         return
     except Exception:
         await websocket.close(code=1011)
+
+
+@router.get("/snapshot")
+async def get_stream_snapshot(
+    stream_url: str = Query(..., description="Full RTSP URL to capture a frame from"),
+    quality: int = Query(default=80, ge=10, le=100),
+) -> Response:
+    """
+    Capture a single JPEG frame from the given RTSP stream server-side.
+
+    The frontend calls this instead of doing canvas capture (which requires
+    CORS headers on the HLS/WebRTC server).  Returns image/jpeg bytes.
+    """
+    _guard_local_environment()
+
+    loop = asyncio.get_running_loop()
+    try:
+        jpeg_bytes: bytes = await loop.run_in_executor(
+            _snapshot_executor,
+            lambda: _grab_jpeg(stream_url, quality),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+    return Response(content=jpeg_bytes, media_type="image/jpeg")
